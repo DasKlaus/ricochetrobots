@@ -18,17 +18,23 @@ function count() {
   else time.className="l10";
   if (game.timeleft < 1) {
     clearInterval(game.timer);
-    display("Zeit abgelaufen");
-    game.running = false;
-    game.points += turn.points; // TODO: if player had no own solution, this needs to be the length of the best solution plus penalty, I guess ten
-    document.querySelector("#fullpoints").innerHTML = game.points;
-    game.targetsWon++; // TODO if solution is own
-    // TODO: if player was best, display something, if another player was best/first, display something else
-    stepAllBack();
-    playSolution();
-    deactivateRobot();
+    endTurn();
   }
   game.timeleft--;
+}
+
+function endTurn() {
+  game.running = false;
+  game.points += calculateTurnPoints();
+  if (ismine) game.targetsWon++;
+  data.me.targets = game.targetsWon;
+  data.me.points = game.points;
+  document.querySelector("#fullpoints").innerHTML = game.points;
+  document.querySelector("#targets").innerHTML = game.targetsWon;
+  if (ismine) display("Punkt für dich!"); else display("Zeit abgelaufen");
+  stepAllBack();
+  playSolution();
+  deactivateRobot();
 }
 
 function countdown(seconds) {
@@ -36,17 +42,17 @@ function countdown(seconds) {
   game.timer = setInterval(count,1000);
 }
 
-function playSolution() { // TODO playback from global best solution. Needs to not go over objects, but colors and dirs.
+function playSolution() {
   function playStep(i) {
-    var step = turn.solutions[turn.fastest][i];
+    var step = fastest[i];
     setTimeout(function(){
-      moveTo(step.robot, step.end);
+      moveTo(map.robots[step.color], map.robots[step.color].tile.getTile(step.dir));
     },(1000*i));
   }
   var delay = 200;
-  if (null==turn.fastest) display("Keine Lösung gefunden");
+  if (null==fastest) display("Keine Lösung");
   else {
-    for (var i=0; i<turn.solutions[turn.fastest].length; i++) {
+    for (var i=0; i<fastest.length; i++) {
       playStep(i);
       delay += 1000;
     }
@@ -95,7 +101,7 @@ function exorcise() { // remove ghosts
 
 function Solution(steps) {
   for (var i=0; i<steps.length; i++) {
-    this[i] = steps[i];
+    this[i] = {color: steps[i].color, dir: steps[i].dir};
   }
   this.length = steps.length;
 }
@@ -117,29 +123,44 @@ function moveRobot(dir) {
   turn.solution.push({color: robot.color, dir: dir, robot: robot, start: robot.tile, end: endpoint});
   document.querySelector("#solution #current").innerHTML += '<div class="move fa fa-arrow-'+directions[dir]+' '+colors[robot.color]+'"></div>';
   moveTo(robot, endpoint);
-  //check if target is reached TODO make this a function
+  //check if target is reached
   if (null !== turn.target && endpoint.target == map.targets[turn.target] && 
      (robot.color == map.targets[turn.target].color || map.targets[turn.target].color == 4)) {
-    if (turn.solutions.length==0) countdown(60); // TODO: solutions of enemy, too
-    deactivateRobot();
-    if (!isDuplicate(turn.solution, turn.solutions, [])) {
-      if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) {
-        if (null == turn.fastest) display("Geschafft!"); else display("Rekord!");
-        turn.fastest = turn.solutions.length;
-        turn.points = turn.solution.length;
-        document.querySelector("#points #turn").innerHTML = turn.solution.length;
-        document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML;
-      } else display("Ziel erreicht!")
-      turn.solutions.push(new Solution(turn.solution));
-      d3.select("#solution #all").insert("div",":first-child").attr("class", "solution").node().innerHTML = document.querySelector("#solution #current").innerHTML;
-    } else display("Diese Lösung hattest du schon!");
-    // set all robots to beginning
-    stepAllBack();
-    turn.solution = [];
+    targetReached();
   }
   //show next moves again
   d3.selectAll(".ghost").remove(); d3.selectAll(".arrow").remove();
   if (null !== turn.robot) turn.robot.show();
+}
+
+function targetReached() {
+  if (turn.solutions.length==0 && null==fastest) {countdown(60); data.game.time = Date.now();}
+    deactivateRobot();
+    if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
+    if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) { // new personal "fastest"
+      if (null == turn.fastest && null==fastest) display("Erster!");
+      else if (null == turn.fastest) display("Geschafft!");
+      else if (null==fastest || turn.solution.length<fastest.length) display("Rekord!"); 
+      else display("Schon besser!"); 
+      turn.fastest = turn.solutions.length;
+      turn.points = turn.solution.length;
+      document.querySelector("#points #turn").innerHTML = turn.solution.length;
+      document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML;
+      d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
+      data.me.solution = new Solution(turn.solution);
+      if (null==fastest || turn.solution.length<fastest.length) {
+	fastest = data.me.solution; 
+	ismine = true;
+	data.game.time = Date.now();
+	console.log(data.game);
+      }
+    } else display("Ziel erreicht!");
+    turn.solutions.push(new Solution(turn.solution));
+    d3.select("#solution #all").insert("div",":first-child").attr("class", "solution").node().innerHTML = document.querySelector("#solution #current").innerHTML;
+  } else display("Diese Lösung hattest du schon!");
+  // set all robots to beginning
+  stepAllBack();
+  turn.solution = [];
 }
 
 function showMoves() {
@@ -182,24 +203,30 @@ function Target(x,y,color,dir) {
 }
 
 function activateNextTarget() {
-  game.timeleft = null;
-  clearInterval(game.timer);
-  game.timer = null;
   document.querySelector("#solution #best").innerHTML = "";
   document.querySelector("#solution #current").innerHTML = "";
   document.querySelector("#solution #all").innerHTML = "";
   document.querySelector("#points #turn").innerHTML = "&nbsp;";
+  document.querySelector("#time").classList.remove("l10");
   document.querySelector("#time").innerHTML = "&nbsp;";
   if (null == turn) {
     turn = {solutions: [], solution: [], fastest: null, target: null, robot: null, points: 0};
     map.targets[0].activate(); return;
   }
+  for (var i=0; i<map.robots.length; i++) {
+    data.game.robots[i].x = map.robots[i].x;
+    data.game.robots[i].y = map.robots[i].y;
+  }
   if (turn.target+1<map.targets.length) {
     turn = {solutions: [], solution: [], fastest: null, target: turn.target, robot: null, points: 0};
+    fastest = null;
     map.targets[turn.target+1].activate();
     document.querySelector("#round").innerHTML = turn.target+1;
-    //countdown(60);
     game.running = true;
+    data.game.round = turn.target;
+    data.me.round = turn.target;
+    data.me.solution = null;
+    data.game.time = null;
   } else endGame();
 }
 
@@ -266,14 +293,14 @@ function stepAllBack() {
   for (var i=0; i<count; i++) stepBack();
 }
 
-function isDuplicate(piece, array, properties) {
+function isDuplicate(piece, array, properties, obj=true) {
   for (var i=0; i<array.length; i++) {
     var different = false;
-    if (properties.length==0) { // looking for an array within an array
+    if (!obj) { // looking for an array within an array
       if (piece.length != array[i].length) different = true;
       else {
         for (var elem=0; elem<piece.length; elem++) {
-          if (!isDuplicate(piece[elem], [array[i][elem]], Object.getOwnPropertyNames(piece[elem]))) different = true;
+          if (!isDuplicate(piece[elem], [array[i][elem]], properties)) different = true;
         }
       }
     } else
@@ -298,56 +325,140 @@ function shuffle(array, seed) {
 }
 
 function rename() {
-  display(document.querySelector("input.name").value); // TODO: change it in to-send array
+  data.me.name = document.querySelector("input.name").value;
 }
 
-function startGame() { // TODO how to start a game that's in the middle of being played?
-  // initiate all vars
+function letsGo() {
+  data.game = {}
+  map = {nested: [], tiles: [], targets: [], robots: null, pieces: null, seed: null};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
+  createMap();
   turn = null;
   d3.select(window).on("keydown", handleKey);
   activateNextTarget();
   display("Runde gestartet!");
-  //countdown(60);
   game.running = true;
-  // TODO: ajax here
+  ajax("start", {data}, nothing, error);
 }
 
+function nothing(response) {for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
+function error(response) {display("Netzwerkfehler: "+response);}
+
 function endGame() {
-  // TODO: set all or most vars back (why? get resetted on redraw anyway)
+  // TODO: are all vars set back to start?
   clearInterval(game.timer);
   game.timer = null;
   d3.select(window).on("keydown", function(){});
   d3.select("#points").attr("style", "");
   d3.select("#time").attr("style", "");
   document.querySelector("#map").innerHTML="";
-  d3.select("#map").append("div").attr("id", "lobby").append("div").text("Spiel beendet! Hier kommen die Scores! Points: "+game.points+", Targets won: "+game.targetsWon)
-    .append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
-  // TODO: game stats: how many players at whole, how many points each player reached, how many targets
-  // TODO: ajax here
+  document.querySelector("#solutionwrapper").innerHTML="";
+  var right = d3.select("#solutionwrapper").append("div").attr("class", "text");
+  right.append("h3").text("Punkte");
+  // add self
+  players.push(data.me);
+  // get worst score for calculations
+  var worst = 0;
+  for (var i=0; i<players.length; i++) {
+    if (null!=players[i].points && players[i].points > worst) worst = players[i].points;
+  }
+  // sort
+  players.sort(function(a, b){
+    if (a.targets < b.targets) return 1;
+    if (a.targets > b.targets) return -1;
+    if (a.points > b.points) return 1;
+    if (a.points < b.points) return -1;
+    return 0;
+  });
+  // loop again to display
+  for (var i=0; i<players.length; i++) {
+    player = players[i];
+    // calculate score if player not active anymore
+    if (player.round==data.game.round-1) { // last seen last round
+      if (null != player.solution) player.points = player.points+player.solution.length;
+      else if (null != fastest) {ismine=false; player.points += calculateTurnPoints();}
+    }
+    if (player.round==data.game.round) { // last seen this round
+      player.points = player.points;
+    }
+    else { // too long ago, new points set
+      player.points = worst+(10*(data.game.round-player.round));
+    }
+    var className = (player==data.me) ? "score me" : "score";
+    var score = right.append("div").attr("class", className).text(player.name);
+    score.append("span").attr("class", "pts").text(player.targets);
+    score.append("span").attr("class", "pts").text(player.points);
+  }
+  
+  var left = d3.select("#map").append("div").attr("id", "lobby")
+  left.append("br");
+  left.append("br");
+  left.append("br");
+  left.append("span").text("Spiel beendet!")
+  left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
+  data.game = null;
+  ajax("end", {}, nothing, error);
 }
 
 function showLobby() {
-  // TODO: set all vars back (why? get resetted on redraw anyway)
+  // TODO: are all vars set back to start?
   document.querySelector("#map").innerHTML="";
-  d3.select("#map").append("div").attr("id", "lobby").append("div").attr("class", "btn start").on("click", createMap).text("Start!");
+  d3.select("#map").append("div").attr("id", "lobby").append("div").attr("class", "btn start").on("click", letsGo).text("Start!");
   document.querySelector("#solutionwrapper").innerHTML="";
-  d3.select("#solutionwrapper").append("input").attr("class", "name").attr("type", "text").attr("value", "Gast"); //TODO put sessionid-seeded name here
+  d3.select("#solutionwrapper").append("input").attr("class", "name").attr("type", "text").attr("value", data.me.name);
   d3.select("#solutionwrapper").append("div").attr("class", "rename").on("click", rename).text("Umbenennen");
-  // TODO: #map holds buttons and interaction, #solutionwrapper holds names of players in this lobby, maximum of 16 or something
-  // TODO: ajax here (no, ajax alllll the time!)
-  // TODO: show people
-  // TODO: do rooms - per get-variable?
-  // TODO: just show names
-  // TODO: all players get a guest name from php and can change it
-  // TODO: during a game there needs to be a button for ending the game prematurely - returning to the lobby
-  // TODO: php-side: just one file - returns names of players in room, and if a game happens, the map object and the fastest solution for every player or something. map object needs to be the current state since last target setting. So maybe send the state at activatenewtarget, and if the. state should include map, activetarget ... why even map? createmap from pieces, more like it, and robots, and active target? or i of active target? yes, yes ...
+  // TODO: do rooms per get variable
 }
 
-function createMap() { // or create from!
-  map = {nested: [], tiles: [], targets: [], robots: [], pieces: [], seed: 0};
+function ajax(get, data, success, error) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', 'http://wollmilchmedien.de/ricochetrobots/ajax.php?do='+get);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+        success(JSON.parse(xhr.responseText));
+    } else error();
+  };
+  xhr.ontimeout = solo;
+  xhr.onerror = solo;
+  xhr.send(JSON.stringify(data));
+}
+
+function loop() {
+  if (Date.now()-ajaxtime>ajaxspeed) {
+    ajaxtime = Date.now(); 
+    ajax("play", {data}, play, error);
+  }
+  window.requestAnimationFrame(loop);
+}
+
+function solo() {
+  console.log("Netzwerkproblem, von nun an Singleplayer.");
+  d3.select("#players").text("Keine Netzwerkverbindung!");
+  ajax = nothing;
+  showLobby = letsGo;
+  showLobby();
+}
+
+function calculateTurnPoints() {
+  if (ismine) return fastest.length;
+  var longest=0;
+  for (var i=0; i<players.length; i++) {
+    if (players[i].round == data.game.round 
+       && players[i].solution != null 
+       && players[i].solution.length>longest)
+      longest = players[i].solution.length;
+  }
+  return longest+10;
+}
+
+function createMap() {
+  // TODO: break off game, next target buttons
+  // prepare html
   d3.select("#time").attr("style", "visibility: visible;");
   d3.select("#points").attr("style", "visibility: visible;");
+  document.querySelector("#fullpoints").innerHTML = game.points;
+  document.querySelector("#targets").innerHTML = game.targetsWon;
   d3.select("#map").selectAll("*").remove();
   var solutionwrapper = d3.select("#solutionwrapper");
   solutionwrapper.selectAll("*").remove();
@@ -357,6 +468,25 @@ function createMap() { // or create from!
   sol.append("div").attr("id", "current");
   solutionwrapper.append("div").attr("class", "btn fa fa-step-backward").on("click", stepBack);
   solutionwrapper.append("div").attr("class", "btn fa fa-fast-backward").on("click", stepAllBack);
+  // build board from four pieces
+  var pieces = []; // get actual pieces, not just indices here
+  if (null == map.pieces) {
+    map.pieces = [];
+    // take four originals of four colours at random
+    while (pieces.length<4) {
+      var i = Math.floor(Math.random()*originals.length);
+      var next = originals[i];
+      if (!isDuplicate(next, pieces, ["color"])) {
+        pieces.push(next);
+        map.pieces.push(i);
+      }
+    }
+    data.game.pieces = map.pieces;
+  } else {
+    for (var i=0; i<map.pieces.length; i++) {
+      pieces.push(originals[i]);
+    }
+  }
   // generate raw tiles
   map.tiles = [];
   map.nested = [];
@@ -367,36 +497,6 @@ function createMap() { // or create from!
       var tile = new Tile(x,y);
       col.push(tile);
       map.tiles.push(tile);
-    }
-  }
-  // TODO: if targets are raw data and only get created later, then this can be defined outside of createMap
-  // TODO: diagonal color-coded walls - drawing and moving according to color and drawing correct arrow in robot.show
-  var originals = [ // contains targets and walls (position from upper left corner)
-    {color: 0, wallX: 3, wallY: 5, targets: [new Target(1,1,0,1), new Target(6,1,3,3), new Target(2,4,1,2), new Target(7,5,2,0)]},
-    {color: 0, wallX: 3, wallY: 4, targets: [new Target(5,1,1,2), new Target(1,4,3,3), new Target(1,6,2,0), new Target(7,5,0,1)]},
-    {color: 0, wallX: 1, wallY: 5, targets: [new Target(4,1,3,3), new Target(1,3,0,1), new Target(5,5,2,0), new Target(2,6,1,2)]},
-  //{color: 0, wallX: 4, wallY: 2, targets: [new Target(6,1,1,2), new Target(1,4,3,3), new Target(2,4,0,1), new Target(5,6,2,0)]}, // plus diagonals in blue downwards at 4,1 and in yellow downwards at 6,2
-    {color: 1, wallX: 5, wallY: 3, targets: [new Target(3,2,2,0), new Target(5,3,1,1), new Target(2,4,0,3), new Target(4,5,3,2)]},
-    {color: 1, wallX: 4, wallY: 4, targets: [new Target(2,1,2,0), new Target(6,3,1,1), new Target(4,5,0,3), new Target(1,6,3,2)]},
-    {color: 1, wallX: 3, wallY: 3, targets: [new Target(1,2,0,1), new Target(5,1,3,2), new Target(6,4,2,0), new Target(2,6,1,3)]},
-  //{color: 1, wallX: 2, wallY: 6, targets: [new Target(5,1,3,2), new Target(6,1,2,0), new Target(1,5,0,1), new Target(7,4,1,3)]}, // plus diagonals in blue upwards at 2,1 and in red downwards at 7,4
-    {color: 2, wallX: 2, wallY: 3, targets: [new Target(5,1,1,1), new Target(7,2,4,2), new Target(3,4,0,2), new Target(6,5,3,0), new Target(1,6,2,3)]},
-    {color: 2, wallX: 3, wallY: 6, targets: [new Target(6,1,1,1), new Target(1,3,2,3), new Target(5,4,3,0), new Target(2,5,0,2), new Target(7,5,4,2)]},
-    {color: 2, wallX: 4, wallY: 4, targets: [new Target(2,1,0,2), new Target(1,3,3,1), new Target(6,4,2,0), new Target(5,6,1,3), new Target(3,7,4,2)]},
-  //{color: 2, wallX: 4, wallY: 6, targets: [new Target(2,3,1,3), new Target(3,3,3,1), new Target(6,2,2,0), new Target(1,5,0,2), new Target(5,7,4,2)]}, // plus diagonals in red downwards at 2,1 and in green downwards at 3,6
-    {color: 3, wallX: 1, wallY: 5, targets: [new Target(4,1,0,0), new Target(1,2,3,3), new Target(6,3,2,2), new Target(3,6,1,1)]},
-    {color: 3, wallX: 4, wallY: 5, targets: [new Target(1,2,3,0), new Target(6,1,2,2), new Target(6,5,1,3), new Target(3,6,0,1)]},
-    {color: 3, wallX: 1, wallY: 6, targets: [new Target(1,4,0,1), new Target(3,1,3,0), new Target(6,3,2,2), new Target(4,6,1,3)]}
-  //{color: 3, wallX: 5, wallY: 5, targets: [new Target(1,3,0,0), new Target(6,4,2,2), new Target(2,6,3,3), new Target(3,6,1,1)]}, // plus diagonals in green upwards at 4,1 and in yellow downwards at 5,7
-  ];
-  // take four originals of four colours at random
-  var pieces = [];
-  while (pieces.length<4) {
-    var i = Math.floor(Math.random()*originals.length);
-    var next = originals[i];
-    if (!isDuplicate(next, pieces, ["color"])) {
-      pieces.push(next);
-      map.pieces.push(i);
     }
   }
   // set walls
@@ -444,8 +544,10 @@ function createMap() { // or create from!
   for (var i=0; i<pieces.length; i++) {
     wallRotated(pieces[i].wallX,0,3,i);
     wallRotated(0,pieces[i].wallY,2,i);
+    // create targets
     for (var t=0; t<pieces[i].targets.length; t++) {
-      var target = pieces[i].targets[t];
+      var p = pieces[i].targets[t]; // parameters for new target
+      var target = new Target(p[0],p[1],p[2],p[3]);
       var pos = rotate(target.x, target.y, i);
       wallRotated(target.x, target.y, target.dir, i);
       wallRotated(target.x, target.y, (target.dir+1)%4, i);
@@ -456,7 +558,11 @@ function createMap() { // or create from!
       map.nested[target.x][target.y].target = target;
     }
   }
-  map.targets = shuffle(map.targets, Math.floor(Math.random()*Math.pow(10, map.targets.length)).toString());
+  if (null == map.seed) {
+    map.seed = Math.floor(Math.random()*Math.pow(10, map.targets.length)).toString();
+    data.game.seed = map.seed;
+  }
+  map.targets = shuffle(map.targets, map.seed);
   // draw map
   d3.select("#map").selectAll("tiles").data(map.tiles).enter()
     .append("div")
@@ -476,16 +582,27 @@ function createMap() { // or create from!
         })
       .on("click", deactivateRobot);
   // generate robots
-  map.robots = [];
-  for (var color=0; color<5; color++) {
-    var x, y, robot;
-    do {
-      x = Math.floor(Math.random()*16);
-      y = Math.floor(Math.random()*16);
-      robot = new Robot(x,y,color);
-    } while (((x==7 || x==8) && (y==7 || y==8)) || isDuplicate(robot, map.robots, ["x","y"]))
-    map.robots.push(robot);
-    map.nested[x][y].robot = robot;
+  if (null == map.robots) {
+    map.robots = [];
+    data.game.robots = [];
+    for (var color=0; color<5; color++) {
+      var x, y, robot;
+      do {
+        x = Math.floor(Math.random()*16);
+        y = Math.floor(Math.random()*16);
+        robot = new Robot(x,y,color);
+      } while (((x==7 || x==8) && (y==7 || y==8)) || isDuplicate(robot, map.robots, ["x","y"]))
+      data.game.robots.push({x:x, y:y, color: color});
+      map.robots.push(robot);
+      map.nested[x][y].robot = robot;
+    }
+  } else {
+    data.game.robots = [];
+    for (var i=0; i<map.robots.length; i++) {
+      data.game.robots.push(map.robots[i]);
+      map.robots[i] = new Robot(map.robots[i].x, map.robots[i].y, map.robots[i].color);
+      map.nested[map.robots[i].x][map.robots[i].y].robot = map.robots[i];
+    }
   }
   // draw robots
   d3.select("#map").selectAll("robots").data(map.robots).enter()
@@ -502,5 +619,26 @@ function createMap() { // or create from!
     .text(function(d,i){return i+1;});
   // create first target
   d3.select("#map").append("div").attr("class", "target");
-  startGame();
 }
+
+// map tiles
+// TODO: test if these are accurate (by creating maps with specific ones and matching them with the physical boards)
+// TODO: diagonal color-coded walls - drawing and moving according to color and drawing correct arrow in robot.show
+var originals = [ // contains targets and walls (position from upper left corner)
+  {color: 0, wallX: 3, wallY: 5, targets: [[1,1,0,1], [6,1,3,3], [2,4,1,2], [7,5,2,0]]},
+  {color: 0, wallX: 3, wallY: 4, targets: [[5,1,1,2], [1,4,3,3], [1,6,2,0], [7,5,0,1]]},
+  {color: 0, wallX: 1, wallY: 5, targets: [[4,1,3,3], [1,3,0,1], [5,5,2,0], [2,6,1,2]]},
+  //{color: 0, wallX: 4, wallY: 2, targets: [[6,1,1,2], [1,4,3,3], [2,4,0,1], [5,6,2,0]]}, // plus diagonals in blue downwards at 4,1 and in  yellow downwards at 6,2
+  {color: 1, wallX: 5, wallY: 3, targets: [[3,2,2,0], [5,3,1,1], [2,4,0,3], [4,5,3,2]]},
+  {color: 1, wallX: 4, wallY: 4, targets: [[2,1,2,0], [6,3,1,1], [4,5,0,3], [1,6,3,2]]},
+  {color: 1, wallX: 3, wallY: 3, targets: [[1,2,0,1], [5,1,3,2], [6,4,2,0], [2,6,1,3]]},
+//{color: 1, wallX: 2, wallY: 6, targets: [[5,1,3,2], [6,1,2,0], [1,5,0,1], [7,4,1,3]]}, // plus diagonals in blue upwards at 2,1 and in red downwards at 7,4
+  {color: 2, wallX: 2, wallY: 3, targets: [[5,1,1,1], [7,2,4,2], [3,4,0,2], [6,5,3,0], [1,6,2,3]]},
+  {color: 2, wallX: 3, wallY: 6, targets: [[6,1,1,1], [1,3,2,3], [5,4,3,0], [2,5,0,2], [7,5,4,2]]},
+  {color: 2, wallX: 4, wallY: 4, targets: [[2,1,0,2], [1,3,3,1], [6,4,2,0], [5,6,1,3], [3,7,4,2]]},
+//{color: 2, wallX: 4, wallY: 6, targets: [[2,3,1,3], [3,3,3,1], [6,2,2,0], [1,5,0,2], [5,7,4,2]]}, // plus diagonals in red downwards at 2,1 and in green downwards at 3,6
+  {color: 3, wallX: 1, wallY: 5, targets: [[4,1,0,0], [1,2,3,3], [6,3,2,2], [3,6,1,1]]},
+  {color: 3, wallX: 4, wallY: 5, targets: [[1,2,3,0], [6,1,2,2], [6,5,1,3], [3,6,0,1]]},
+  {color: 3, wallX: 1, wallY: 6, targets: [[1,4,0,1], [3,1,3,0], [6,3,2,2], [4,6,1,3]]}
+//{color: 3, wallX: 5, wallY: 5, targets: [[1,3,0,0], [6,4,2,2], [2,6,3,3], [3,6,1,1]]}, // plus diagonals in green upwards at 4,1 and in yellow downwards at 5,7
+];

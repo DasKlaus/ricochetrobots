@@ -1,7 +1,7 @@
-.blue {background-color: #46f; color: #46f;}
-.red {background-color: #f33; color: #f33;}
-.yellow {background-color: #c6c; color: #c6c;}
-.green {background-color: #0d0; color: #0d0;}
+.blue {background-color: #364D9C; color: #364D9C;}
+.red {background-color: #D2365D; color: #D2365D;}
+.yellow {background-color: #E6B13B; color: #E6B13B;}
+.green {background-color: #6FCA34; color: #6FCA34;}
 .black {background-color: #888; color: #888;}
 body {padding: 5px;}
 h1 {text-align: center; margin: 20px;}
@@ -10,7 +10,7 @@ h1 {text-align: center; margin: 20px;}
 #head {display: flex; justify-content: center; align-items: baseline;}
 #points, #time {flex: 0 0 auto; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-family: sans; font-size: 35px; width: 100px; text-align: center; transition: color 5s;}
 #points {text-align: left;}
-#points div {float: right; text-align: center; font-size: 10px; color: #888; line-height: 20px;}
+#points div {float: right; text-align: center; font-size: 10px; color: #888; line-height: 14px; margin-top: -1px;}
 #time {text-align: right; color: #ddd;}
 #time.g120 {color: #ddd;}
 #time.g60 {color: #888;}
@@ -19,18 +19,26 @@ h1 {text-align: center; margin: 20px;}
 #time.l10 {color: #e12;}
 #map .btn, #solutionwrapper .rename, #solutionwrapper input.name {width: 155px; text-align: center; display: inline-block; border-radius: 25px; padding: 10px; background-color: #888; color: #fff; font-family: sans; font-weight: bold; font-size: 20px; margin: 10px 0; border: 2px solid #000; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}
 #solutionwrapper input.name {color: #000; background-color: #fff; top:25%; width:}
+#map #lobby {text-align: center; font-family: sans;}
+#solutionwrapper h3 {text-align: center;}
+#solutionwrapper .text {font-family: sans; padding: 20px;}
+#solutionwrapper .pts {float: right; display: block; width: 60px; text-align: right;}
+#solutionwrapper .score {margin-bottom: 20px;}
+#solutionwrapper .score.me {font-weight: bold;}
 #map {display: inline-block; vertical-align: top; position: relative; height: 320px; width: 320px; border: 2px solid #000; background-color: #eee;}
 #map #lobby {width: 100%; height: 100%; border: 2px solid #000; box-sizing: border-box;}
-#solutionwrapper {display: inline-block; position: relative; vertical-align: top; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin-left: 20px; box-sizing: border-box; text-align: left;}
+#solutionwrapper {display: inline-block; position: relative; vertical-align: top; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin-left: 8px; box-sizing: border-box; text-align: left;}
 #solutionwrapper .btn {position: absolute; bottom: 10px; right: 40px; cursor: pointer;}
 #solutionwrapper .btn:last-child {right: 10px;}
 #solution {display: flex; flex-direction: column; width: 100%; height: 100%;}
+#solution #best #ownpoints {float: right;}
 #solution #best {padding: 10px; border-bottom: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
 #solution #all {overflow: auto; flex: 1 1 auto;}
 #solution #all .solution {padding: 10px; border-bottom: 1px dotted #000;}
 #solution #all .solution:last-child {border: none;}
 #solution #current {padding: 10px 50px 10px 10px; border-top: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
 #solution .move {background-color: transparent;}
+#players {min-height: 58px; width: 570px; border: 4px solid #000; background-color: #eee; margin: 12px auto; box-sizing: border-box; text-align: center; padding:10px; font-family: sans; line-height: 30px;}
 .tile {width: 20px; height: 20px; background-color: #eee; box-sizing: border-box; border: 1px solid #aaa; position: absolute;}
 .tile.wallup {border-top: 2px solid #000;}
 .tile.wallleft {border-left: 2px solid #000;}
