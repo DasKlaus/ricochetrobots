@@ -134,9 +134,8 @@ function moveRobot(dir) {
 }
 
 function targetReached() {
-  if (turn.solutions.length==0 && null==fastest) {countdown(60); data.game.time = Date.now();}
-    deactivateRobot();
-    if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
+  deactivateRobot();
+  if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
     if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) { // new personal "fastest"
       if (null == turn.fastest && null==fastest) display("Erster!");
       else if (null == turn.fastest) display("Geschafft!");
@@ -151,8 +150,8 @@ function targetReached() {
       if (null==fastest || turn.solution.length<fastest.length) {
 	fastest = data.me.solution; 
 	ismine = true;
-	data.game.time = Date.now();
-	console.log(data.game);
+	data.game.solved = Date.now();
+	countdown(60);
       }
     } else display("Ziel erreicht!");
     turn.solutions.push(new Solution(turn.solution));
@@ -226,7 +225,7 @@ function activateNextTarget() {
     data.game.round = turn.target;
     data.me.round = turn.target;
     data.me.solution = null;
-    data.game.time = null;
+    data.game.solved = null;
   } else endGame();
 }
 
@@ -329,7 +328,7 @@ function rename() {
 }
 
 function letsGo() {
-  data.game = {}
+  data.game = {robots: [], pieces: [], seed: 0, round: 0, solved: null};
   map = {nested: [], tiles: [], targets: [], robots: null, pieces: null, seed: null};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
   createMap();
@@ -338,14 +337,12 @@ function letsGo() {
   activateNextTarget();
   display("Runde gestartet!");
   game.running = true;
-  ajax("start", {data}, nothing, error);
+  ajax("start", {data}, nothing, solo);
 }
 
-function nothing(response) {for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
-function error(response) {display("Netzwerkfehler: "+response);}
+function nothing(response) {if (null!=response) for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
 
 function endGame() {
-  // TODO: are all vars set back to start?
   clearInterval(game.timer);
   game.timer = null;
   d3.select(window).on("keydown", function(){});
@@ -396,12 +393,18 @@ function endGame() {
   left.append("br");
   left.append("span").text("Spiel beendet!")
   left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
-  data.game = null;
-  ajax("end", {}, nothing, error);
+  data = {
+    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null},
+    me: {name: data.me.name, targets: 0, points: 0, round: 0, solution: null},
+  }
+  ajax("end", {}, nothing, solo);
 }
 
 function showLobby() {
-  // TODO: are all vars set back to start?
+  data = {
+    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null},
+    me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solution: null},
+  }
   document.querySelector("#map").innerHTML="";
   d3.select("#map").append("div").attr("id", "lobby").append("div").attr("class", "btn start").on("click", letsGo).text("Start!");
   document.querySelector("#solutionwrapper").innerHTML="";
@@ -416,7 +419,10 @@ function ajax(get, data, success, error) {
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.onload = function() {
     if (xhr.status === 200) {
-        success(JSON.parse(xhr.responseText));
+	console.log(xhr.responseText);
+	var parsed = JSON.parse(xhr.responseText);
+	console.log(parsed);
+        success(parsed);
     } else error();
   };
   xhr.ontimeout = solo;
@@ -427,20 +433,22 @@ function ajax(get, data, success, error) {
 function loop() {
   if (Date.now()-ajaxtime>ajaxspeed) {
     ajaxtime = Date.now(); 
-    ajax("play", {data}, play, error);
+    ajax("play", {data}, play, solo);
   }
   window.requestAnimationFrame(loop);
 }
 
-function solo() {
+function solo(response) {
   console.log("Netzwerkproblem, von nun an Singleplayer.");
-  d3.select("#players").text("Keine Netzwerkverbindung!");
+  console.log(response);
+  d3.select("#players").text("Netzwerkfehler oder keine Netzwerkverbindung!");
   ajax = nothing;
   showLobby = letsGo;
-  showLobby();
+  if (null!=data.game && 0!=data.game.seed) showLobby();
 }
 
 function calculateTurnPoints() {
+  if (null == fastest) return 0;
   if (ismine) return fastest.length;
   var longest=0;
   for (var i=0; i<players.length; i++) {

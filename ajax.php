@@ -7,8 +7,6 @@ $players = array();
 $game;
 $deletePlayerTime = 600; // in seconds
 
-// TODO detect name change
-
 // connect
 $db = new mysqli('localhost','###','###','###');
 $error = array();
@@ -33,6 +31,10 @@ if ($db->query("DELETE FROM players WHERE room='".$room."' AND time<(IF(ISNULL((
 	$error[]=$db->error;
 
 $receive = json_decode(file_get_contents('php://input'), true)["data"];
+if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
+
+//update name
+if (isset($receive["me"])) $_SESSION['name'] = $receive["me"]["name"];
 
 // read from db 
 // get game
@@ -50,19 +52,14 @@ if ($result = $db->query('SELECT * FROM players')) {
 		$obj->json = json_decode($obj->json, true);
 		if ($obj->sessionid == session_id()) {
 			$iamhere=true;
-			if ($_SESSION['name'] == 'Gast') $_SESSION['name'] = $obj->name;
 		}
 		$players[] = $obj;
 	}
  	$result->close();
 }
-if ($iamhere) {
-	if ($db->query("UPDATE players SET room='".$room."', name='".$_SESSION['name']."' WHERE sessionid='".session_id()."'") !== TRUE) 
-	$error[]=$db->error;
-}
-else {
+if (!$iamhere) { // TODO: only do this during init.
 	$error[]="Player entered into db";
-	if($db->query("INSERT INTO players (sessionid, name) VALUES ('".session_id()."','".$_SESSION['name']."')") !==TRUE)
+	if($db->query("INSERT INTO players (sessionid, name, room) VALUES ('".session_id()."','".$_SESSION['name']."','".$room."')") !==TRUE)
 	$error[]=$db->error;
 }
 
@@ -75,6 +72,7 @@ switch ($do) {
 		$error[]="Spiel begonnen";		
 		if($db->query("INSERT INTO games (room, json) VALUES ('".$room."','".json_encode($receive["game"])."')") !==TRUE)
 			$error[]=$db->error;
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
 		break;
 	case "end":
 		$error[]="Spiel beendet";
@@ -86,9 +84,11 @@ switch ($do) {
 			if ($db->query("UPDATE games SET json='".json_encode($receive["game"])."' WHERE room='".$room."'") !== TRUE) 
 			$error[]=$db->error;
 		}
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
 		if ($db->query("UPDATE players SET name='".$_SESSION['name']."', 
-				json='".json_encode($receive["me"])."' WHERE sessionid='".session_id()."'") !== TRUE) 
+				json='".json_encode($receive["me"])."', time=NOW() WHERE sessionid='".session_id()."'") !== TRUE) 
 			$error[]=$db->error;
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
 		break;
 }
 
@@ -100,7 +100,7 @@ if ($result = $db->query('SELECT * FROM games WHERE room="'.$room.'"')) {
 		$game->json = json_decode($obj->json, true);
 	}
  	$result->close();
-}
+} else $error[]=$db->error;
 $players = array();
 // get all available players on the server
 if ($result = $db->query('SELECT * FROM players WHERE room="'.$room.'"')) {
@@ -110,12 +110,13 @@ if ($result = $db->query('SELECT * FROM players WHERE room="'.$room.'"')) {
 		$players[] = $obj;
 	}
  	$result->close();
-}
+} else $error[]=$db->error;
 
-if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
 // close
 $db->close();
-$return = (object) ['game' => $game, 'players' => $players, 'sent' => $receive, 'error' => $error];
+
+$error[]=$game;
+$return = (object) ['game' => $game, 'test' => $game, 'players' => $players, 'sent' => $receive, 'error' => $error];
 // output
 print_r(json_encode($return));
 ?>
