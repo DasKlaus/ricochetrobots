@@ -8,7 +8,7 @@ $game;
 $deletePlayerTime = 600; // in seconds
 
 // connect
-$db = new mysqli('localhost','###','###','###');
+$db = new mysqli('localhost','DasKlaussql20','tVqQewsijn','DasKlaussql20');
 $error = array();
 if ($db->connect_errno) $error[]=mysqli_connect_error();
 
@@ -115,8 +115,7 @@ if ($result = $db->query('SELECT * FROM players WHERE room="'.$room.'"')) {
 // close
 $db->close();
 
-$error[]=$game;
-$return = (object) ['game' => $game, 'test' => $game, 'players' => $players, 'sent' => $receive, 'error' => $error];
+$return = (object) ['gamedata' => $game, 'playerdata' => $players, 'error' => $error];
 // output
 print_r(json_encode($return));
 ?>

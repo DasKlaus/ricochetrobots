@@ -48,45 +48,50 @@ var ajaxtime = Date.now(); // time the last ajax request was sent
 var ajaxspeed = 5000;//200; // milliseconds between ajax requests
 
 var data = { // ajax data
-  game: {robots: [], pieces: [], seed: 0, round: 0, solved: null}, // includes timestamp of last solution
+  game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
   me: {name: "Gast", targets: 0, points: 0, round: 0, solution: null},
 }
 
-var fastest = null; // holds the fastest solution for the current turn
 var ismine = true; // whether or not the found solution is by the player
 
 var players = []; // received data from other players
 
 ajax("init", {}, init, solo);
 function init(response) { console.log(response);
-  //for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}
+  for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}
   ajaxtime = Date.now();
-  //window.requestAnimationFrame(loop); 
-  if (null==response.game || null==response.game.json) {showLobby(); return;}
+  window.requestAnimationFrame(loop); 
+  if (null==response.gamedata || null==response.gamedata.json) {showLobby(); return;}
+  var solved = response.gamedata.json.solved; // restoreGame will reset this, so I need to collect it before
+  var gamesolution = response.gamedata.json.solution;
   restoreGame(response);
+  data.game.solved = solved;
+  data.game.solution = gamesolution;
   display("Laufendem Spiel beigetreten!");
-  if (null != response.game.json.solved) {
-    console.log("Timer running!"); // TODO check!
-    game.timeleft = Math.round(Date.now()-response.game.json.solved);
-    if (game.timeleft>60) game.timeleft=60;
+  if (null != solved) {
+    game.timeleft = Math.round(Date.now()-response.gamedata.json.solved);
+    if (game.timeleft>60) game.timeleft=60; // everyone left the game before the timer was up
     countdown(game.timeleft);
   }
 }
 
-function restoreGame(response) { // TODO game ends itself
-  data.game = response.game.json;
-  map = {nested: [], tiles: [], targets: [], robots: response.game.json.robots, pieces: response.game.json.pieces, seed: response.game.json.seed};
+function restoreGame(response) {
+  data.game = response.gamedata.json;
+  map = {nested: [], tiles: [], targets: [], 
+         robots: response.gamedata.json.robots, 
+	 pieces: response.gamedata.json.pieces, 
+	 seed: response.gamedata.json.seed};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
   turn = {solutions: [], solution: [], fastest: null, target: data.game.round-1, robot: null, points: 0};
   var me = null;
   var worst = 0;
-  for (var i=0; i<response.players.length; i++) {
-    var player = response.players[i];
+  for (var i=0; i<response.playerdata.length; i++) {
+    var player = response.playerdata[i];
     if (player.hasOwnProperty("me") && player.me) {
       me = player;
     } else {
-      if (null!=response.players[i]["json"].points && response.players[i]["json"].points > worst) 
-        worst = response.players[i]["json"].points;
+      if (null!=response.playerdata[i]["json"].points && response.playerdata[i]["json"].points > worst) 
+        worst = response.playerdata[i]["json"].points;
       players.push(player["json"]);
     }
   }
@@ -114,7 +119,7 @@ function restoreGame(response) { // TODO game ends itself
   } else {data.me.points = 0;}
   createMap();
   d3.select(window).on("keydown", handleKey);
-  activateNextTarget(); // TODO do timer stuff here?
+  activateNextTarget();
   game.running = true;
 }
 
@@ -123,26 +128,26 @@ function play(response) { console.log(response);
   var ta_players = [];
   var names = [];
   var me = null;
-  for (var i=0; i<response.players.length; i++) {
-    var player = response.players[i];
+  for (var i=0; i<response.playerdata.length; i++) {
+    var player = response.playerdata[i];
     if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) continue;
     if (player.hasOwnProperty("me") && player.me) me = player;
     else {
       ta_players.push(player["json"]);
       if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
-         (null==response.game || null==response.game.json || data.game.round==player["json"].round)))
+         (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
          {names.push(player["json"].name);}
     }
   }
   players = ta_players;
   if (0==data.game.seed) { // currently not in a game
-    if (null!=response.game && null!= response.game.json && 0!=response.game.seed) { // there is a game
+    if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // there is a game
       restoreGame(response);
       display("Ein Spiel wurde gestartet!");
     }
   }
   else { // currently in a game
-    if (null==response.game || null== response.game.json || 0==response.game.seed) {endGame(); return;} // game has ended
+    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {endGame(); return;} // game has ended
 
     // TODO identify best solution and set player that did it
     // TODO if time is up set countdown to 1 or something

@@ -44,15 +44,15 @@ function countdown(seconds) {
 
 function playSolution() {
   function playStep(i) {
-    var step = fastest[i];
+    var step = data.game.solution[i];
     setTimeout(function(){
       moveTo(map.robots[step.color], map.robots[step.color].tile.getTile(step.dir));
-    },(1000*i));
+    },(1000*(i+1)));
   }
-  var delay = 200;
-  if (null==fastest) display("Keine Lösung");
+  var delay = 1200;
+  if (null==data.game.solution) display("Keine Lösung");
   else {
-    for (var i=0; i<fastest.length; i++) {
+    for (var i=0; i<data.game.solution.length; i++) {
       playStep(i);
       delay += 1000;
     }
@@ -137,18 +137,18 @@ function targetReached() {
   deactivateRobot();
   if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
     if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) { // new personal "fastest"
-      if (null == turn.fastest && null==fastest) display("Erster!");
+      if (null == turn.fastest && null==data.game.solution) display("Erster!");
       else if (null == turn.fastest) display("Geschafft!");
-      else if (null==fastest || turn.solution.length<fastest.length) display("Rekord!"); 
+      else if (null==data.game.solution || turn.solution.length<data.game.solution.length) display("Rekord!"); 
       else display("Schon besser!"); 
       turn.fastest = turn.solutions.length;
       turn.points = turn.solution.length;
       document.querySelector("#points #turn").innerHTML = turn.solution.length;
       document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML;
       d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
-      data.me.solution = new Solution(turn.solution);
-      if (null==fastest || turn.solution.length<fastest.length) {
-	fastest = data.me.solution; 
+      data.me.solution = new Solution(turn.solution);;
+      if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
+	data.game.solution = new Solution(turn.solution); 
 	ismine = true;
 	data.game.solved = Date.now();
 	countdown(60);
@@ -218,13 +218,13 @@ function activateNextTarget() {
   }
   if (turn.target+1<map.targets.length) {
     turn = {solutions: [], solution: [], fastest: null, target: turn.target, robot: null, points: 0};
-    fastest = null;
     map.targets[turn.target+1].activate();
     document.querySelector("#round").innerHTML = turn.target+1;
     game.running = true;
     data.game.round = turn.target;
     data.me.round = turn.target;
     data.me.solution = null;
+    data.game.solution = null;
     data.game.solved = null;
   } else endGame();
 }
@@ -328,7 +328,7 @@ function rename() {
 }
 
 function letsGo() {
-  data.game = {robots: [], pieces: [], seed: 0, round: 0, solved: null};
+  data.game = {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null};
   map = {nested: [], tiles: [], targets: [], robots: null, pieces: null, seed: null};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
   createMap();
@@ -373,7 +373,7 @@ function endGame() {
     // calculate score if player not active anymore
     if (player.round==data.game.round-1) { // last seen last round
       if (null != player.solution) player.points = player.points+player.solution.length;
-      else if (null != fastest) {ismine=false; player.points += calculateTurnPoints();}
+      else if (null != data.game.solution) {ismine=false; player.points += calculateTurnPoints();}
     }
     if (player.round==data.game.round) { // last seen this round
       player.points = player.points;
@@ -394,7 +394,7 @@ function endGame() {
   left.append("span").text("Spiel beendet!")
   left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
   data = {
-    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null},
+    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
     me: {name: data.me.name, targets: 0, points: 0, round: 0, solution: null},
   }
   ajax("end", {}, nothing, solo);
@@ -402,7 +402,7 @@ function endGame() {
 
 function showLobby() {
   data = {
-    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null},
+    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
     me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solution: null},
   }
   document.querySelector("#map").innerHTML="";
@@ -419,10 +419,7 @@ function ajax(get, data, success, error) {
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.onload = function() {
     if (xhr.status === 200) {
-	console.log(xhr.responseText);
-	var parsed = JSON.parse(xhr.responseText);
-	console.log(parsed);
-        success(parsed);
+	success(JSON.parse(xhr.responseText));
     } else error();
   };
   xhr.ontimeout = solo;
@@ -448,8 +445,8 @@ function solo(response) {
 }
 
 function calculateTurnPoints() {
-  if (null == fastest) return 0;
-  if (ismine) return fastest.length;
+  if (null == data.game.solution) return 0;
+  if (ismine) return data.game.solution.length;
   var longest=0;
   for (var i=0; i<players.length; i++) {
     if (players[i].round == data.game.round 
