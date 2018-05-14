@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Ricochet Robots</title>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="style.css">
+<script src="logic.js"></script>
+</head>
+<body>
+<div id="head">
+<div id="alltime">&nbsp;</div>
+<div id="time">&nbsp;</div>
+<h1>Ricochet Robots</h1>
+<div id="points">
+  <span id="turn">&nbsp;</span>
+  <div>Runde <span id="round">1</span><br>Gesamt <span id="fullpoints">0</span></div>
+</div>
+<div id="allpoints">&nbsp;</div>
+</div>
+<div id="wrap">
+<div id="map"></div>
+<div id="solutionwrapper">
+</div>
+</div>
+<!--<div id="anleitung">Tastatursteuerung: 1-4 Roboterauswahl, Pfeiltasten Bewegung, Backspace Schritt zurück, Escape auf Anfang. Klicken geht auch.</div>-->
+<script>
+// TODO: purge d3, should not be difficult without
+// TODO: purge font awesome?
+
+// TODO: show which round we are in and at which gesamt points
+// TODO: game modes: find most targets within given time, finish all targets fastest, find most targets multiplayer, best run for map
+// TODO: left from time a whole game timer runs (blass), right from points a whole game points counter runs (blass)
+// TODO: if we need a timer all the time anyway, why not put it in the same timer, pause it if needed and add countdown to it when applicable?
+// TODO: if no lobby specified, pick one with no running game
+// TODO: solution found by self, solution found by other player
+// TODO: points if no own solution found: moves of opponent with longest move plus ten
+// TODO: no points in single player, or full game time and full points (the less, the better).
+// TODO: highscores. Well, any scores, really
+// TODO: anleitung (ricochet robots rules, bedienung)
+// TODO: display other players in game somewhere convenient (plain text list below, centered)
+var scale = 20;
+var colors = ["red", "blue", "yellow", "green", "black"];
+var directions = ["up", "left", "down", "right"];
+
+var turn; // gets set every turn
+var map; // gets set on map creation
+var game; // gets set on game start
+
+var ajaxdata = { // helper object, in reality this gets built in real-time
+  game: {robots: [], pieces: [], seed: 0, target: 0}, // includes timestamp of last solution
+  me: {name: "Gast", targets: 0, points: 0, target: 0, solution: {}},
+  players: []// what we receive // includes timestamp of last action
+}
+
+// TODO: serverside: json file with name of game
+
+function ajax(get, data, success, error)
+var xhr = new XMLHttpRequest();
+xhr.open('PUT', 'url'+get); //TODO: set url
+xhr.setRequestHeader('Content-Type', 'application/json');
+xhr.onload = function() {
+    if (xhr.status === 200) {
+        success(JSON.parse(xhr.responseText));
+    } else error();
+};
+xhr.ontimeout = solo;
+xhr.onerror = solo;
+xhr.send(JSON.stringify(data));
+
+ajax("init", {name: "Gast"}, init, solo); // TODO: initial data- what should it be?
+
+function init(response) {
+  // TODO: set name
+  if (null==response.game) {showLobby(); return;}
+  // TODO: recreate game from server data- map creation and points included
+}
+
+function solo() {
+  display("Keine Netzwerkverbindung!");
+  showLobby = function(){createMap();};
+  showLobby();
+}
+
+</script>
+</body>
+</html>
