@@ -415,7 +415,7 @@ function showLobby() {
 
 function ajax(get, data, success, error) {
   var xhr = new XMLHttpRequest();
-  xhr.open('PUT', 'http://wollmilchmedien.de/ricochetrobots/ajax.php?do='+get);
+  xhr.open('PUT', path+'ajax.php?do='+get);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.onload = function() {
     if (xhr.status === 200) {

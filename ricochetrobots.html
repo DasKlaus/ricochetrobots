@@ -36,6 +36,7 @@
 // TODO: give ghosts a non-transparent :after for the arrow pointer depending from which direction the arrow comes
 // TODO: anleitung (ricochet robots rules, bedienung)
 // TODO: display other players in game somewhere convenient (plain text list below, centered)
+var path = "http://wollmilchmedien.de/ricochetrobots/"
 var scale = 20;
 var colors = ["red", "blue", "yellow", "green", "black"];
 var directions = ["up", "left", "down", "right"];
@@ -69,9 +70,10 @@ function init(response) { console.log(response);
   data.game.solution = gamesolution;
   display("Laufendem Spiel beigetreten!");
   if (null != solved) {
-    game.timeleft = Math.round(Date.now()-response.gamedata.json.solved);
+    game.timeleft = 60-Math.round((Date.now()-solved)/1000);
     if (game.timeleft>60) game.timeleft=60; // everyone left the game before the timer was up
     countdown(game.timeleft);
+    document.querySelector("#points #turn").innerHTML = data.game.solution.length;
   }
 }
 
