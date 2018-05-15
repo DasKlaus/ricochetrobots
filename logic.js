@@ -1,3 +1,175 @@
+function ajax(get, data, success, error) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', path+'ajax.php?do='+get);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+	success(JSON.parse(xhr.responseText));
+    } else error();
+  };
+  xhr.ontimeout = solo;
+  xhr.onerror = solo;
+  xhr.send(JSON.stringify(data));
+}
+
+function loop() {
+  if (Date.now()-ajaxtime>ajaxspeed) {
+    ajaxtime = Date.now(); 
+    ajax("play", {data}, play, solo);
+  }
+  window.requestAnimationFrame(loop);
+}
+
+function nothing(response) {if (null!=response) for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
+
+function solo(response) {
+  console.log("Netzwerkproblem, von nun an Singleplayer.");
+  console.log(response);
+  d3.select("#players").text("Netzwerkfehler oder keine Netzwerkverbindung!");
+  ajax = nothing;
+  showLobby = letsGo;
+  if (null!=data.game && 0!=data.game.seed) showLobby();
+}
+
+function init(response) { console.log(response);
+  for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}
+  ajaxtime = Date.now();
+  window.requestAnimationFrame(loop); 
+  if (null==response.gamedata || null==response.gamedata.json) {showLobby(); return;}
+  restoreGame(response);
+  display("Laufendem Spiel beigetreten!");
+}
+
+function restoreGame(response) {
+  var solved = response.gamedata.json.solved; // restoreGame will reset this, so I need to collect it before
+  var gamesolution = response.gamedata.json.solution;
+  enterGame(response);
+  data.game.solved = solved;
+  data.game.solution = gamesolution;
+  if (null != solved) {
+    game.timeleft = 60-Math.round((Date.now()-solved)/1000);
+    if (game.timeleft>60) game.timeleft=60; // everyone left the game before the timer was up
+    countdown(game.timeleft);
+    document.querySelector("#points #turn").innerHTML = data.game.solution.length;
+  }
+}
+
+function enterGame(response) {
+  data.game = response.gamedata.json;
+  map = {nested: [], tiles: [], targets: [], 
+         robots: response.gamedata.json.robots, 
+	 pieces: response.gamedata.json.pieces, 
+	 seed: response.gamedata.json.seed};
+  game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
+  turn = {solutions: [], solution: [], fastest: null, target: data.game.round-1, robot: null, points: 0};
+  var me = null;
+  var worst = 0;
+  for (var i=0; i<response.playerdata.length; i++) {
+    var player = response.playerdata[i];
+    if (player.hasOwnProperty("me") && player.me) {
+      if (null!=player.solution && null!=data.game.solution 
+	  && null!=data.game.solved && null!=player.solved 
+	  && data.game.solved==player.solved) 
+	isMine=true; // last solution found was own
+      me = player;
+    } else {
+      if (null!=response.playerdata[i]["json"].points && response.playerdata[i]["json"].points > worst) 
+        worst = response.playerdata[i]["json"].points;
+      players.push(player["json"]);
+    }
+  }
+  if (null != me && null != me.json && null != me.json.points && null != game.points) {
+    if (data.me.name == "Gast") data.me.name = (me.json.name == "Gast") ? me.name : me.json.name;
+    data.me.targets = me.json.targets;
+    game.targetsWon = me.json.targets;
+    if (me.json.round==data.game.round-1) { // last seen last round
+      game.points = me.json.points;
+      data.me.points = game.points;
+    }
+    if (me.json.round==data.game.round) { // last seen this round
+      game.points = me.json.points;
+      data.me.points = game.points;
+      data.me.solution = me.json.solution;
+      if (me.json.solution!=null) turn.points = me.json.solution.length;
+    }
+    else { // too long ago, new points set
+      game.points = worst+(10*(data.game.round-me.json.round));
+      data.me.points = game.points;
+    }
+  } else if (null != game.points && null != data.game.round) {
+    game.points = worst+(10*data.game.round);
+    data.me.points = game.points;
+  } else {data.me.points = 0;}
+  createMap();
+  d3.select(window).on("keydown", handleKey);
+  activateNextTarget();
+  game.running = true;
+}
+
+function play(response) { console.log(response);
+  for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}
+  var ta_players = []; // transactional TODO why?!?
+  var names = [];
+  for (var i=0; i<response.playerdata.length; i++) {
+    var player = response.playerdata[i];
+    if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) continue;
+    if (!player.hasOwnProperty("me") || !player.me) {
+      ta_players.push(player["json"]);
+      if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
+         (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
+         {names.push(player["json"].name);}
+    }
+  }
+  players = ta_players;
+  if (0==data.game.seed) { // currently not in a game
+    if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // ... but there is a game
+      restoreGame(response);
+      display("Ein Spiel wurde gestartet!");
+    }
+  }
+  else { // currently in a game
+    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {endGame(); return;} // ... but game has ended
+    if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
+      if (data.game.solved != response.gamedata.json.solved) {
+        if (null == data.game.solved) { // new solution
+	  ismine = false;
+	  data.game.solved = response.gamedata.json.solved;
+	  data.game.solution = response.gamedata.json.solution;
+	  document.querySelector("#points #turn").innerHTML = response.gamedata.solution.length;
+	  display(" hat eine Lösung gefunden");
+	  game.timeleft = 60-Math.round((Date.now()-response.gamedata.json.solved)/1000);
+	  if (game.timeleft<0) game.timeleft=1; // out of time
+	  countdown(game.timeleft);
+        }
+	else if (null != response.gamedata.json.solved) {
+          if (response.gamedata.json.solved<data.game.solved) { // earlier solution
+	    ismine = false;
+	    display(" war schneller!");
+	  }
+          if (response.gamedata.json.solution.length<data.game.solution.length) { // faster solution
+	    ismine = false;
+	    data.game.solved = response.gamedata.json.solved;
+	    data.game.solution = response.gamedata.json.solution;
+	    turn.points = 0;
+	    document.querySelector("#points #turn").innerHTML = response.gamedata.solution.length;
+	    display(" war besser!");
+          }
+        }
+      }
+      // TODO Do we need to update the timer?
+    }
+    else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
+      clearInterval(game.timer); // make sure the clock is no longer ticking
+      endTurn(); 
+    }
+    else { // off by more than one turn, or magically ahead
+      data.game = response.gamedata.json;
+      restoreGame(response); // best to redraw completely
+      display("Spiel neu geladen");
+    }
+  }  
+}
+
 function display(text) {
   d3.selectAll(".display").remove();
   var display = d3.select("body").append("div").attr("class","display").text(text);
@@ -344,8 +516,6 @@ function letsGo() {
   ajax("start", {data}, nothing, solo);
 }
 
-function nothing(response) {if (null!=response) for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
-
 function endGame() {
   clearInterval(game.timer);
   game.timer = null;
@@ -415,37 +585,6 @@ function showLobby() {
   d3.select("#solutionwrapper").append("input").attr("class", "name").attr("type", "text").attr("value", data.me.name);
   d3.select("#solutionwrapper").append("div").attr("class", "rename").on("click", rename).text("Umbenennen");
   // TODO: do rooms per get variable
-}
-
-function ajax(get, data, success, error) {
-  var xhr = new XMLHttpRequest();
-  xhr.open('PUT', path+'ajax.php?do='+get);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-	success(JSON.parse(xhr.responseText));
-    } else error();
-  };
-  xhr.ontimeout = solo;
-  xhr.onerror = solo;
-  xhr.send(JSON.stringify(data));
-}
-
-function loop() {
-  if (Date.now()-ajaxtime>ajaxspeed) {
-    ajaxtime = Date.now(); 
-    ajax("play", {data}, play, solo);
-  }
-  window.requestAnimationFrame(loop);
-}
-
-function solo(response) {
-  console.log("Netzwerkproblem, von nun an Singleplayer.");
-  console.log(response);
-  d3.select("#players").text("Netzwerkfehler oder keine Netzwerkverbindung!");
-  ajax = nothing;
-  showLobby = letsGo;
-  if (null!=data.game && 0!=data.game.seed) showLobby();
 }
 
 function calculateTurnPoints() {

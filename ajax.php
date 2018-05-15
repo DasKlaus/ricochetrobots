@@ -73,11 +73,20 @@ switch ($do) {
 		if($db->query("INSERT INTO games (room, json) VALUES ('".$room."','".json_encode($receive["game"])."')") !==TRUE)
 			$error[]=$db->error;
 		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
+		// get game again
+		if ($result = $db->query('SELECT * FROM games WHERE room="'.$room.'"')) {
+			while ($obj = $result->fetch_object()) {
+				$game = $obj;
+				$game->json = json_decode($obj->json, true);
+			}
+		 	$result->close();
+		} else $error[]=$db->error;
 		break;
 	case "end":
 		$error[]="Spiel beendet";
 		if($db->query("DELETE FROM games WHERE room='".$room."'") !==TRUE)
 			$error[]=$db->error;
+		$game = null;
 		break;
 	case "play": 
 		if (null != $game) {
@@ -92,15 +101,7 @@ switch ($do) {
 		break;
 }
 
-// read from db again TODO only read again if necessary
-// get game
-if ($result = $db->query('SELECT * FROM games WHERE room="'.$room.'"')) {
-	while ($obj = $result->fetch_object()) {
-		$game = $obj;
-		$game->json = json_decode($obj->json, true);
-	}
- 	$result->close();
-} else $error[]=$db->error;
+// read players from db again TODO only read again if necessary
 $players = array();
 // get all available players on the server
 if ($result = $db->query('SELECT * FROM players WHERE room="'.$room.'"')) {
