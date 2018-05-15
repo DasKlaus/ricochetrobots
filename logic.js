@@ -146,11 +146,13 @@ function targetReached() {
       document.querySelector("#points #turn").innerHTML = turn.solution.length;
       document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML;
       d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
-      data.me.solution = new Solution(turn.solution);;
+      data.me.solution = new Solution(turn.solution);
       if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
 	data.game.solution = new Solution(turn.solution); 
 	ismine = true;
-	data.game.solved = Date.now();
+	var solved = Date.now();
+	data.game.solved = solved;
+	data.me.solved = solved;
 	countdown(60);
       }
     } else display("Ziel erreicht!");
@@ -226,6 +228,8 @@ function activateNextTarget() {
     data.me.solution = null;
     data.game.solution = null;
     data.game.solved = null;
+    data.me.solved = null;
+    ismine = false;
   } else endGame();
 }
 
@@ -395,7 +399,7 @@ function endGame() {
   left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
   data = {
     game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
-    me: {name: data.me.name, targets: 0, points: 0, round: 0, solution: null},
+    me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
   ajax("end", {}, nothing, solo);
 }
@@ -403,7 +407,7 @@ function endGame() {
 function showLobby() {
   data = {
     game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
-    me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solution: null},
+    me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
   document.querySelector("#map").innerHTML="";
   d3.select("#map").append("div").attr("id", "lobby").append("div").attr("class", "btn start").on("click", letsGo).text("Start!");

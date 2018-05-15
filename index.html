@@ -50,10 +50,10 @@ var ajaxspeed = 5000;//200; // milliseconds between ajax requests
 
 var data = { // ajax data
   game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
-  me: {name: "Gast", targets: 0, points: 0, round: 0, solution: null},
+  me: {name: "Gast", targets: 0, points: 0, round: 0, solved: null, solution: null},
 }
 
-var ismine = true; // whether or not the found solution is by the player
+var ismine = false; // whether or not the found solution is by the player
 
 var players = []; // received data from other players
 
@@ -63,12 +63,16 @@ function init(response) { console.log(response);
   ajaxtime = Date.now();
   window.requestAnimationFrame(loop); 
   if (null==response.gamedata || null==response.gamedata.json) {showLobby(); return;}
+  restoreGame(response);
+  display("Laufendem Spiel beigetreten!");
+}
+
+function restoreGame(response) {
   var solved = response.gamedata.json.solved; // restoreGame will reset this, so I need to collect it before
   var gamesolution = response.gamedata.json.solution;
-  restoreGame(response);
+  enterGame(response);
   data.game.solved = solved;
   data.game.solution = gamesolution;
-  display("Laufendem Spiel beigetreten!");
   if (null != solved) {
     game.timeleft = 60-Math.round((Date.now()-solved)/1000);
     if (game.timeleft>60) game.timeleft=60; // everyone left the game before the timer was up
@@ -77,7 +81,7 @@ function init(response) { console.log(response);
   }
 }
 
-function restoreGame(response) {
+function enterGame(response) {
   data.game = response.gamedata.json;
   map = {nested: [], tiles: [], targets: [], 
          robots: response.gamedata.json.robots, 
@@ -90,6 +94,10 @@ function restoreGame(response) {
   for (var i=0; i<response.playerdata.length; i++) {
     var player = response.playerdata[i];
     if (player.hasOwnProperty("me") && player.me) {
+      if (null!=player.solution && null!=data.game.solution 
+	  && null!=data.game.solved && null!=player.solved 
+	  && data.game.solved==player.solved) 
+	isMine=true; // last solution found was own
       me = player;
     } else {
       if (null!=response.playerdata[i]["json"].points && response.playerdata[i]["json"].points > worst) 
@@ -127,13 +135,13 @@ function restoreGame(response) {
 
 function play(response) { console.log(response);
   for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}
-  var ta_players = [];
+  var ta_players = []; // transactional TODO why?!?
   var names = [];
   var me = null;
   for (var i=0; i<response.playerdata.length; i++) {
     var player = response.playerdata[i];
     if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) continue;
-    if (player.hasOwnProperty("me") && player.me) me = player;
+    if (player.hasOwnProperty("me") && player.me) data.me = player["json"];
     else {
       ta_players.push(player["json"]);
       if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
@@ -143,20 +151,35 @@ function play(response) { console.log(response);
   }
   players = ta_players;
   if (0==data.game.seed) { // currently not in a game
-    if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // there is a game
+    if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // ... but there is a game
       restoreGame(response);
       display("Ein Spiel wurde gestartet!");
     }
   }
   else { // currently in a game
-    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {endGame(); return;} // game has ended
+    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {endGame(); return;} // ... but game has ended
+    if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
+      if (data.game.solved != response.gamedata.json.solved) // TODO fuck, I'm only ever going to get my own game data back!
+      for (var i=0; i<players.length; i++) {
+      
+      }
+    }
+    else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
+      clearInterval(game.timer); // make sure the clock is no longer ticking
+      endTurn(); 
+    }
+    else { // off by more than one turn, or magically ahead
+      data.game = response.gamedata.json;
+      restoreGame(response); // best to redraw completely
+      display("Spiel neu geladen");
+    }
 
-    // TODO identify best solution and set player that did it
+
+    // TODO identify best solution and set player that did it - already done, just needs to check if it's mine
     // TODO if time is up set countdown to 1 or something
-    // TODO return to game in progress - check if still the same target, if not, do the thing.
     // TODO set ismine according to me flag
     // TODO has someone found a better solution? a first solution? do we need to start the timer? has the game ended?
-    // TODO is someone already in the next turn? Do we need to update the timer?
+    // TODO Do we need to update the timer?
   }  
 }
 
