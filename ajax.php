@@ -8,7 +8,7 @@ $game;
 $deletePlayerTime = 600; // in seconds
 
 // connect
-$db = new mysqli('localhost','###','###','###');
+$db = new mysqli('localhost','root','pass','ricochetrobots');
 $error = array();
 if ($db->connect_errno) $error[]=mysqli_connect_error();
 

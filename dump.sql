@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `games` (
   `room` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
-  `json` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `json` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS `players` (
   `sessionid` varchar(255) COLLATE utf8_bin NOT NULL,
   `name` varchar(255) COLLATE utf8_bin NOT NULL,
   `room` varchar(255) COLLATE utf8_bin NOT NULL,
-  `json` text COLLATE utf8_bin NOT NULL,
-  `time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP
+  `json` text COLLATE utf8_bin NOT NULL DEFAULT '',
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 --

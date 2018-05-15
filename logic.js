@@ -20,7 +20,7 @@ function loop() {
   window.requestAnimationFrame(loop);
 }
 
-function nothing(response) {if (null!=response) for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
+function nothing(response) {if (undefined!=response && null!=response && response.hasOwnProperty("error")) for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}}
 
 function solo(response) {
   console.log("Netzwerkproblem, von nun an Singleplayer.");
@@ -28,7 +28,7 @@ function solo(response) {
   d3.select("#players").text("Netzwerkfehler oder keine Netzwerkverbindung!");
   ajax = nothing;
   showLobby = letsGo;
-  if (null!=data.game && 0!=data.game.seed) showLobby();
+  if (null==data.game || 0==data.game.seed) showLobby();
 }
 
 function init(response) { console.log(response);
@@ -94,11 +94,11 @@ function enterGame(response) {
       if (me.json.solution!=null) turn.points = me.json.solution.length;
     }
     else { // too long ago, new points set
-      game.points = worst+(10*(data.game.round-me.json.round));
+      game.points = worst+(10*(data.game.round-me.json.round)); // TODO can escalate points because penalty could get added again and again
       data.me.points = game.points;
     }
   } else if (null != game.points && null != data.game.round) {
-    game.points = worst+(10*data.game.round);
+    game.points = worst+(10*data.game.round); // TODO can escalate points because penalty could get added again and again
     data.me.points = game.points;
   } else {data.me.points = 0;}
   createMap();
@@ -120,7 +120,7 @@ function play(response) {
          (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
          {names.push(player["json"].name);}
     }
-  }
+  } // TODO: Mitspieler anzeigen
   players = ta_players;
   if (0==data.game.seed) { // currently not in a game
     if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // ... but there is a game
@@ -132,6 +132,7 @@ function play(response) {
     if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {endGame(); return;} // ... but game has ended
     if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
       if (data.game.solved != response.gamedata.json.solved) {
+	// TODO get owner of solution
         if (null == data.game.solved) { // new solution
 	  ismine = false;
 	  data.game.solved = response.gamedata.json.solved;
@@ -161,13 +162,10 @@ function play(response) {
     }
     else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
       console.log("Der Server ist schon eine Runde weiter");
-      clearInterval(game.timer); // make sure the clock is no longer ticking TODO doesn't help
+      clearInterval(game.timer); // make sure the clock is no longer ticking
       endTurn(); 
     }
-    else if (data.me.round==response.gamedata.json.round+1) { // we are one turn off
-      console.log("Der Server ist eine Runde zurück");
-    }
-    else { // off by more than one turn, or magically ahead
+    else if (data.me.round!=response.gamedata.json.round+1) { // off by more than one turn, or magically ahead
       clearInterval(game.timer);
       data.game = response.gamedata.json;
       restoreGame(response); // best to redraw completely
@@ -565,7 +563,7 @@ function endGame() {
       player.points = player.points;
     }
     else { // too long ago, new points set
-      player.points = worst+(10*(data.game.round-player.round));
+      player.points = worst+(10*(data.game.round-player.round)); // TODO can escalate points because penalty could get added again and again
     }
     var className = (player==data.me) ? "score me" : "score";
     var score = right.append("div").attr("class", className).text(player.name);
