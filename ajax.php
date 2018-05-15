@@ -8,7 +8,7 @@ $game;
 $deletePlayerTime = 600; // in seconds
 
 // connect
-$db = new mysqli('localhost','DasKlaussql20','tVqQewsijn','DasKlaussql20');
+$db = new mysqli('localhost','###','###','###');
 $error = array();
 if ($db->connect_errno) $error[]=mysqli_connect_error();
 
@@ -85,6 +85,8 @@ switch ($do) {
 	case "end":
 		$error[]="Spiel beendet";
 		if($db->query("DELETE FROM games WHERE room='".$room."'") !==TRUE)
+			$error[]=$db->error;
+		if($db->query("DELETE FROM players WHERE room='".$room."'") !==TRUE)
 			$error[]=$db->error;
 		$game = null;
 		break;

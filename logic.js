@@ -41,6 +41,7 @@ function init(response) { console.log(response);
 }
 
 function restoreGame(response) {
+  console.log("Spiel wiederhergestellt");
   var solved = response.gamedata.json.solved; // restoreGame will reset this, so I need to collect it before
   var gamesolution = response.gamedata.json.solution;
   enterGame(response);
@@ -106,7 +107,7 @@ function enterGame(response) {
   game.running = true;
 }
 
-function play(response) { console.log(response);
+function play(response) {
   for (var i=0; i<response.error.length; i++) {console.log(response.error[i]);}
   var ta_players = []; // transactional TODO why?!?
   var names = [];
@@ -136,15 +137,15 @@ function play(response) { console.log(response);
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
 	  document.querySelector("#points #turn").innerHTML = response.gamedata.solution.length;
-	  display(" hat eine Lösung gefunden");
+	  display("Jemand hat eine Lösung gefunden"); // TODO name
 	  game.timeleft = 60-Math.round((Date.now()-response.gamedata.json.solved)/1000);
 	  if (game.timeleft<0) game.timeleft=1; // out of time
 	  countdown(game.timeleft);
         }
 	else if (null != response.gamedata.json.solved) {
           if (response.gamedata.json.solved<data.game.solved) { // earlier solution
-	    ismine = false;
-	    display(" war schneller!");
+	    ismine = false; // TODO but what if it's me? my personal fastest must replace fastest, too!
+	    display("Jemand war schneller!"); // TODO name
 	  }
           if (response.gamedata.json.solution.length<data.game.solution.length) { // faster solution
 	    ismine = false;
@@ -152,17 +153,22 @@ function play(response) { console.log(response);
 	    data.game.solution = response.gamedata.json.solution;
 	    turn.points = 0;
 	    document.querySelector("#points #turn").innerHTML = response.gamedata.solution.length;
-	    display(" war besser!");
+	    display("Jemand war besser!"); // TODO name
           }
         }
       }
       // TODO Do we need to update the timer?
     }
     else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
-      clearInterval(game.timer); // make sure the clock is no longer ticking
+      console.log("Der Server ist schon eine Runde weiter");
+      clearInterval(game.timer); // make sure the clock is no longer ticking TODO doesn't help
       endTurn(); 
     }
+    else if (data.me.round==response.gamedata.json.round+1) { // we are one turn off
+      console.log("Der Server ist eine Runde zurück");
+    }
     else { // off by more than one turn, or magically ahead
+      clearInterval(game.timer);
       data.game = response.gamedata.json;
       restoreGame(response); // best to redraw completely
       display("Spiel neu geladen");
@@ -171,6 +177,7 @@ function play(response) { console.log(response);
 }
 
 function display(text) {
+  console.info(text);
   d3.selectAll(".display").remove();
   var display = d3.select("body").append("div").attr("class","display").text(text);
   display.attr("style", "opacity: 1;");
@@ -211,6 +218,7 @@ function endTurn() {
 
 function countdown(seconds) {
   game.timeleft = seconds;
+  clearInterval(game.timer);
   game.timer = setInterval(count,1000);
 }
 
@@ -306,6 +314,7 @@ function moveRobot(dir) {
 }
 
 function targetReached() {
+  game.running = false;
   deactivateRobot();
   if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
     if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) { // new personal "fastest"
@@ -331,9 +340,12 @@ function targetReached() {
     turn.solutions.push(new Solution(turn.solution));
     d3.select("#solution #all").insert("div",":first-child").attr("class", "solution").node().innerHTML = document.querySelector("#solution #current").innerHTML;
   } else display("Diese Lösung hattest du schon!");
-  // set all robots to beginning
-  stepAllBack();
-  turn.solution = [];
+  // set all robots to beginning after a moment of time so the animation finishes first
+  setTimeout(function(){
+      stepAllBack();
+      turn.solution = [];
+      game.running = true;
+    },1000);
 }
 
 function showMoves() {
