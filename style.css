@@ -10,6 +10,7 @@ h1 {text-align: center; margin: 20px;}
 #head {display: flex; justify-content: center; align-items: baseline;}
 #points, #time {flex: 0 0 auto; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-family: sans; font-size: 35px; width: 100px; text-align: center; transition: color 5s;}
 #points {text-align: left;}
+#points #turn.stranger {color: #e12;}
 #points div {float: right; text-align: center; font-size: 10px; color: #888; line-height: 14px; margin-top: -1px;}
 #time {text-align: right; color: #ddd;}
 #time.g120 {color: #ddd;}

@@ -132,6 +132,7 @@ function play(response) {
     }
   }
   else { // currently in a game
+    // TODO: check if another player also created a game. has a timestamp in db, keep the earliest (either do nothing or enter that one)
     if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {endGame(); return;} // ... but game has ended
     if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
       if (data.game.solved != response.gamedata.json.solved) {
@@ -147,7 +148,8 @@ function play(response) {
 	  ismine = false;
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
-	  document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	  document.querySelector("#points #turn").classList.add("stranger");
+          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
 	  display(owner+" hat eine Lösung gefunden");
 	  game.timeleft = 60-Math.round((Date.now()-response.gamedata.json.solved)/1000);
 	  if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
@@ -160,7 +162,8 @@ function play(response) {
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
 	  turn.points = 0;
-	  document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	  document.querySelector("#points #turn").classList.add("stranger");
+          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
 	  display(owner+" war besser!");
         }
       }
@@ -237,9 +240,9 @@ function playSolution() {
     var step = playback[i];
     setTimeout(function(){
       moveTo(map.robots[step.color], map.robots[step.color].tile.getTile(step.dir));
-    },(1000*(i+1)));
+    },(1000*(i+2)));
   }
-  var delay = 1200;
+  var delay = 2100;
   if (null==playback) display("Keine Lösung");
   else {
     for (var i=0; i<playback.length; i++) {
@@ -334,7 +337,10 @@ function targetReached() {
       else display("Schon besser!"); 
       turn.fastest = turn.solutions.length;
       turn.points = turn.solution.length;
-      document.querySelector("#points #turn").innerHTML = turn.solution.length;
+      if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
+        document.querySelector("#points #turn").classList.remove("stranger");
+        document.querySelector("#points #turn").innerHTML = turn.solution.length;
+      }
       document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML;
       d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
       data.me.solution = new Solution(turn.solution);

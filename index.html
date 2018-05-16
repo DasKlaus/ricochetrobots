@@ -36,7 +36,7 @@
 // TODO: give ghosts a non-transparent :after for the arrow pointer depending from which direction the arrow comes
 // TODO: anleitung (ricochet robots rules, bedienung)
 // TODO: display other players in game somewhere convenient (plain text list below, centered)
-var path = "http://localhost/"
+var path = window.location.href.substring(0, window.location.href.lastIndexOf('/')+1);
 var scale = 20;
 var colors = ["red", "blue", "yellow", "green", "black"];
 var directions = ["up", "left", "down", "right"];
@@ -46,7 +46,7 @@ var map; // gets set on map creation
 var game; // gets set on game start
 
 var ajaxtime = Date.now(); // time the last ajax request was sent
-var ajaxspeed = 5000;//200; // milliseconds between ajax requests
+var ajaxspeed = 500; // milliseconds between ajax requests
 
 var data = { // ajax data
   game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
