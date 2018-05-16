@@ -163,6 +163,7 @@ function play(response) {
 	  display(owner+" war besser!");
         }
       }
+      // TODO check if game is really the same (map, seeds, targets). Just to be sure.
       // TODO check robot position, just to be sure (but not during playback or while moving. Damn.)
       // TODO Do we need to update the timer? Would require a new variable (timestamp of first found solution) - need that one anyway for accurate countdown when joining running game
     }
@@ -337,12 +338,12 @@ function targetReached() {
       d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
       data.me.solution = new Solution(turn.solution);
       if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
-	data.game.solution = new Solution(turn.solution); 
+	if (null==data.game.solution) countdown(60);
+        data.game.solution = new Solution(turn.solution); 
 	ismine = true;
 	var solved = Date.now();
 	data.game.solved = solved;
 	data.me.solved = solved;
-	countdown(60);
       }
     } else display("Ziel erreicht!");
     turn.solutions.push(new Solution(turn.solution));
@@ -524,7 +525,7 @@ function rename() {
 }
 
 function letsGo() {
-  data.game = {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null};
+  data.game = {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null};
   map = {nested: [], tiles: [], targets: [], robots: null, pieces: null, seed: null};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
   createMap();
@@ -588,7 +589,7 @@ function endGame() {
   left.append("span").text("Spiel beendet!")
   left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
   data = {
-    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
+    game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
     me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
   ajax("end", {}, nothing, solo);
@@ -596,7 +597,7 @@ function endGame() {
 
 function showLobby() {
   data = {
-    game: {robots: [], pieces: [], seed: 0, round: 0, solved: null, solution: null},
+    game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
     me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
   document.querySelector("#map").innerHTML="";
@@ -652,7 +653,7 @@ function createMap() {
     data.game.pieces = map.pieces;
   } else {
     for (var i=0; i<map.pieces.length; i++) {
-      pieces.push(originals[i]);
+      pieces.push(originals[map.pieces[i]]);
     }
   }
   // generate raw tiles
@@ -766,6 +767,7 @@ function createMap() {
     }
   } else {
     data.game.robots = [];
+    map.robots = [];
     for (var i=0; i<map.robots.length; i++) {
       data.game.robots.push(map.robots[i]);
       map.robots[i] = new Robot(map.robots[i].x, map.robots[i].y, map.robots[i].color);

@@ -18,16 +18,16 @@ h1 {text-align: center; margin: 20px;}
 #time.g10 {color: #c82;}
 #time.l10 {color: #e12;}
 #map .btn, #solutionwrapper .rename, #solutionwrapper input.name {width: 155px; text-align: center; display: inline-block; border-radius: 25px; padding: 10px; background-color: #888; color: #fff; font-family: sans; font-weight: bold; font-size: 20px; margin: 10px 0; border: 2px solid #000; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}
-#solutionwrapper input.name {color: #000; background-color: #fff; top:25%; width:}
+#solutionwrapper input.name {color: #000; background-color: #fff; top:25%;}
 #map #lobby {text-align: center; font-family: sans;}
 #solutionwrapper h3 {text-align: center;}
 #solutionwrapper .text {font-family: sans; padding: 20px;}
 #solutionwrapper .pts {float: right; display: block; width: 60px; text-align: right;}
 #solutionwrapper .score {margin-bottom: 20px;}
 #solutionwrapper .score.me {font-weight: bold;}
-#map {display: inline-block; vertical-align: top; position: relative; height: 320px; width: 320px; border: 2px solid #000; background-color: #eee;}
+#map {display: inline-block; vertical-align: top; position: relative; height: 320px; width: 320px; border: 2px solid #000; background-color: #eee; margin: 0 8px;}
 #map #lobby {width: 100%; height: 100%; border: 2px solid #000; box-sizing: border-box;}
-#solutionwrapper {display: inline-block; position: relative; vertical-align: top; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin-left: 8px; box-sizing: border-box; text-align: left;}
+#solutionwrapper {display: inline-block; position: relative; vertical-align: top; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin: 0 8px; box-sizing: border-box; text-align: left;}
 #solutionwrapper .btn {position: absolute; bottom: 10px; right: 40px; cursor: pointer;}
 #solutionwrapper .btn:last-child {right: 10px;}
 #solution {display: flex; flex-direction: column; width: 100%; height: 100%;}
