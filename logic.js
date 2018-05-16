@@ -74,7 +74,8 @@ function enterGame(response) {
 	isMine=true; // last solution found was own
       me = player;
     } else {
-      if (null!=response.playerdata[i]["json"].points && response.playerdata[i]["json"].points > worst) 
+      if (null!=response.playerdata[i]["json"] && null!=response.playerdata[i]["json"].points 
+	  && response.playerdata[i]["json"].points > worst) 
         worst = response.playerdata[i]["json"].points;
       players.push(player["json"]);
     }
@@ -767,7 +768,6 @@ function createMap() {
     }
   } else {
     data.game.robots = [];
-    map.robots = [];
     for (var i=0; i<map.robots.length; i++) {
       data.game.robots.push(map.robots[i]);
       map.robots[i] = new Robot(map.robots[i].x, map.robots[i].y, map.robots[i].color);
