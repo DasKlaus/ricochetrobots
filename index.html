@@ -53,6 +53,7 @@ var data = { // ajax data
   me: {name: "Gast", targets: 0, points: 0, round: 0, solved: null, solution: null}
 }
 
+var playback = null; // holds the solution for playback after turn has ended
 var ismine = false; // whether or not the found solution is by the player
 
 var players = []; // received data from other players
