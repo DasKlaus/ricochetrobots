@@ -9,7 +9,6 @@ A multiplayer board game implementation
 
 * put everything on a server
 * create database from dump
-* update path variable in the script tag of html file (path to your server)
 * enter mysql credentials in php file
 
 ## Play
