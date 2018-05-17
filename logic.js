@@ -114,13 +114,19 @@ function play(response) {
   var names = [];
   for (var i=0; i<response.playerdata.length; i++) {
     var player = response.playerdata[i];
-    if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) continue;
-    if (!player.hasOwnProperty("me") || !player.me) {
-      ta_players.push(player["json"]);
-      if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
-         (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
-         {names.push(player["json"].name);}
+    if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) 
+      continue;
+    if (player.hasOwnProperty("me") && player["me"])
+      if (data.me.name=="Gast" && player["name"]!="Gast") {
+        data.me.name = player["name"];
+        if (null!=document.querySelector("input.name")) document.querySelector("input.name").value=data.me.name;
+      }
+      continue;
     }
+    ta_players.push(player["json"]);
+    if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
+       (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
+       {names.push(player["json"].name);}
   }
   text = (names.length>0) ? "Mitspieler: "+names.join(", ") : "";
   d3.select("#players").text(text);
@@ -187,11 +193,13 @@ function play(response) {
 
 function display(text) {
   console.info(text);
-  d3.selectAll(".display").remove();
-  var display = d3.select("body").append("div").attr("class","display").text(text);
-  display.attr("style", "opacity: 1;");
-  setTimeout(function(){display.attr("style", "opacity: 0;");},200);
-  setTimeout(function(){display.remove();}, 2500);
+  // d3.selectAll(".display").remove();
+  var box = d3.select("body").append("div").attr("class","display");
+  box.append("div").append("span").text(text);
+  box.attr("style", "top: -88px;");
+  setTimeout(function(){box.attr("style", "top: -4px; transition: top .5s;");},200);
+  setTimeout(function(){box.attr("style", "top: -88px;");},2000);
+  setTimeout(function(){box.remove();}, 5000);
 }
 
 function count() {
@@ -545,6 +553,7 @@ function letsGo() {
 }
 
 function endGame() {
+  ajax("end", {}, nothing, solo);
   clearInterval(game.timer);
   game.timer = null;
   d3.select(window).on("keydown", function(){});
@@ -599,7 +608,6 @@ function endGame() {
     game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
     me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
-  ajax("end", {}, nothing, solo);
 }
 
 function showLobby() {

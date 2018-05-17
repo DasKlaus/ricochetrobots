@@ -4,15 +4,17 @@
 .green {background-color: #6FCA34; color: #6FCA34;}
 .black {background-color: #888; color: #888;}
 body {padding: 5px;}
-h1 {text-align: center; margin: 20px;}
-.display {position: fixed; text-shadow: 0px 0px 2px rgba(255, 255, 255, 1); text-align: center; transition: opacity 2s ease-in; font-size: 35px; z-index: 10; font-family: monospace; top: 50%; left: 50%; transform: translate(-50%, -50%); background:#eee; display:block; padding:8px 16px; border-radius:16px; border:4px solid #000;}
+h1 {text-align: center; margin: 2px;}
+.display {position: fixed; text-align: center; background: #eee; border: 4px solid #000; top: -4px; left: 50%; transform: translate(-50%,0); padding: 10px; width: 282px; font-family: sans; font-size: 18px; height: 60px; transition: top 1s ease-in;}
+.display div {position: relative; height: 100%; width: 100%;}
+.display div span {display: block; position: absolute; width: 100%; bottom: 0;}
 #wrap {display: block; text-align: center; margin: 0 auto;}
-#head {display: flex; justify-content: center; align-items: baseline;}
-#points, #time {flex: 0 0 auto; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-family: sans; font-size: 35px; width: 100px; text-align: center; transition: color 5s;}
-#points {text-align: left;}
+#head {width: 570px; text-align: center; position: relative; margin: 12px auto; height: 58px; padding: 10px; box-sizing: border-box;}
+#points, #time {position: absolute; bottom: 0; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-family: sans; font-size: 35px; width: 100px; text-align: center; transition: color 5s;}
+#points {text-align: left; right: 0;}
 #points #turn.stranger {color: #e12;}
 #points div {float: right; text-align: center; font-size: 10px; color: #888; line-height: 14px; margin-top: -1px;}
-#time {text-align: right; color: #ddd;}
+#time {text-align: right; color: #ddd; left: 0;}
 #time.g120 {color: #ddd;}
 #time.g60 {color: #888;}
 #time.g30 {color: #000;}
