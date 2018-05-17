@@ -10,7 +10,6 @@ $game;
 $db = new mysqli('localhost','root','pass','ricochetrobots');
 $error = array();
 if ($db->connect_errno) $error[]=mysqli_connect_error();
-$error[] = $_SESSION;
 
 // cleanup 
 if ($db->query("DELETE FROM players WHERE room='".$room."' AND time<(
@@ -20,7 +19,7 @@ if ($db->query("DELETE FROM players WHERE room='".$room."' AND time<(
 	$error[]=$db->error;
 
 $receive = json_decode(file_get_contents('php://input'), true)["data"];
-if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
+if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error_msg();
 
 //update name
 if (isset($receive["me"]) && $receive["me"]["name"] != "Gast") $_SESSION['name'] = $receive["me"]["name"];
@@ -50,6 +49,7 @@ if ($result = $db->query('SELECT * FROM players')) {
 	}
  	$result->close();
 }
+if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error_msg();
 
 if (!$iamhere) {
 	$error[]="Player entered into db";
@@ -68,7 +68,7 @@ switch ($do) {
 		if($db->query("INSERT INTO games (room, json) 
 				VALUES ('".$room."','".json_encode($receive["game"])."')") !==TRUE)
 			$error[]=$db->error;
-		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error_msg();
 		// get game again
 		if ($result = $db->query('SELECT * FROM games WHERE room="'.$room.'"')) {
 			while ($obj = $result->fetch_object()) {
@@ -77,6 +77,7 @@ switch ($do) {
 			}
 		 	$result->close();
 		} else $error[]=$db->error;
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error_msg();
 		break;
 	case "end":
 		$error[]="Spiel beendet";
@@ -90,12 +91,12 @@ switch ($do) {
 				WHERE room='".$room."'") !== TRUE) 
 			$error[]=$db->error;
 		}
-		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error_msg();
 		if ($db->query("UPDATE players SET name='".$_SESSION['name']."', 
 				json='".json_encode($receive["me"])."', time=NOW() 
 				WHERE sessionid='".session_id()."'") !== TRUE) 
 			$error[]=$db->error;
-		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error();
+		if (json_last_error() != JSON_ERROR_NONE) $error[] = json_last_error_msg();
 		break;
 }
 
