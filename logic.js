@@ -428,7 +428,7 @@ function targetReached() {
 
 function showMoves() {
   if (!game.running) return;
-  var robot = this.__data__ || this;
+  var robot = this.robot || this;
   if (turn.robot == robot && this.constructor != Robot) return;
   exorcise();
   for (var dir=0; dir<4; dir++) {
@@ -900,7 +900,9 @@ function createMap() {
     mapspace.appendChild(robotdiv);
   }
   // create first target
-  document.querySelector("#map").innerHTML+='<div class="target"></div>';
+  var target = document.createElement("div");
+  target.className="target";
+  mapspace.appendChild(target);
 }
 
 // map tiles
