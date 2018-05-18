@@ -64,7 +64,7 @@ switch ($do) {
 		$error[]="Initialisierung";
 		break;
 	case "start": 
-		$error[]="Spiel begonnen";		
+		$error[]="Spiel begonnen";
 		if($db->query("INSERT INTO games (room, json) 
 				VALUES ('".$room."','".json_encode($receive["game"])."')") !==TRUE)
 			$error[]=$db->error;

@@ -44,13 +44,16 @@ function init(response) {
 
 function restoreGame(response) {
   console.log("Spiel wiederhergestellt");
-  var solved = response.gamedata.json.solved; // restoreGame will reset this, so I need to collect it before
+  // restoreGame will reset these, so I need to collect it before
+  var firstSolved = response.gamedata.json.firstSolved;
+  var solved = response.gamedata.json.solved;
   var gamesolution = response.gamedata.json.solution;
   enterGame(response);
+  data.game.firstSolved = firstSolved;
   data.game.solved = solved;
   data.game.solution = gamesolution;
-  if (null != solved) {
-    game.timeleft = deadline-Math.round((Date.now()-solved)/1000); // TODO this is time since *fastest* solution was found, not first
+  if (null != firstSolved) {
+    game.timeleft = deadline-Math.round((Date.now()-firstSolved)/1000);
     if (game.timeleft>deadline) game.timeleft=deadline; // everyone left the game before the timer was up
     countdown(game.timeleft);
     document.querySelector("#points #turn").innerHTML = data.game.solution.length;
@@ -73,7 +76,7 @@ function enterGame(response) {
       if (null!=player.solution && null!=data.game.solution 
 	  && null!=data.game.solved && null!=player.solved 
 	  && data.game.solved==player.solved) 
-	isMine=true; // last solution found was own
+	isMine=true; // best solution found was own
       me = player;
     } else {
       if (null!=response.playerdata[i]["json"] && null!=response.playerdata[i]["json"].points 
@@ -111,6 +114,14 @@ function enterGame(response) {
 }
 
 function play(response) {
+  function getOwner() {
+    var owner = "Jemand";
+    if (null != response.gamedata.json.firstSolved) {
+      for (var i=0; i<players.length; i++) {
+        if (players[i].solved == response.gamedata.json.solved) owner = players[i].name;
+      }
+    }
+  }
   players = [];
   var names = [];
   for (var i=0; i<response.playerdata.length; i++) {
@@ -138,39 +149,51 @@ function play(response) {
     }
   }
   else { // currently in a game
-    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) { // ... but game has ended
+    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {
+      // ... but game has ended
       endGame(); return;
     }
-    // TODO: check if another player also created a game. has a timestamp in db, keep the earliest (either do nothing or enter that one)
-    if (response.gamedata.json.seed != data.game.seed && 0!=response.gamedata.json.seed) {
-      console.log("Two different games running!");
-      console.log(response.gamedata.json.seed);
-      console.log(data.game.seed);
-    }
     if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
-      if (data.game.solved != response.gamedata.json.solved) {
-	// get owner of solution
-	var owner = "Jemand";
-	if (null != response.gamedata.json.solved) {
-	  for (var i=0; i<players.length; i++) {
-	    if (players[i].solved == response.gamedata.json.solved) owner = players[i].name;
-	  }
-	}
-        // first solution found by someone else
-        if (null == data.game.solved) {
-	  ismine = false;
+      if ((response.gamedata.json.seed != data.game.seed && 0!=response.gamedata.json.seed)
+          || divergingRobots(response.gamedata.json.robots, data.game.robots)) {
+        // ... but there's a different game running
+        display("Spiel weicht vom Stand im Netzwerk ab und wird wiederhergestellt.");
+        restoreGame(response); 
+        return;
+      }
+      if (null!=response.gamedata.json.firstSolved) { // there is a solution
+        if (null==data.game.firstSolved) { // first solution found
+          var owner = getOwner();
+          ismine = false;
+	  data.game.firstSolved = response.gamedata.json.firstSolved;
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
 	  document.querySelector("#points #turn").classList.add("stranger");
           document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
 	  display(owner+" hat eine Lösung gefunden");
-	  game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.solved)/1000);
+	  game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
 	  if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
 	  countdown(game.timeleft);
         }
-	// faster solution found by someone else
-	else if (null != response.gamedata.json.solved
-             && response.gamedata.json.solution.length<data.game.solution.length) { // faster solution
+        else if (response.gamedata.json.firstSolved!=data.game.firstSolved) { // simultaneous solutions
+          if (response.gamedata.json.firstSolved<data.game.firstSolved) { // player wasn't first
+            var owner = getOwner();
+            display(owner+" war zuerst da!");
+	    data.game.firstSolved = response.gamedata.json.firstSolved;
+            game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
+	    if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
+	    countdown(game.timeleft);
+            if (data.game.solution.length>=response.gamedata.json.solution) { // player was not best, either
+              ismine = false;
+	      data.game.solved = response.gamedata.json.solved;
+	      data.game.solution = response.gamedata.json.solution;
+	      document.querySelector("#points #turn").classList.add("stranger");
+              document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+            }
+          }
+        }
+        else if (response.gamedata.json.solution.length<data.game.solution.length) { // faster solution
+          var owner = getOwner();
           ismine = false;
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
@@ -179,10 +202,14 @@ function play(response) {
           document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
 	  display(owner+" war besser!");
         }
+        if (Math.abs(deadline-Math.round((Date.now)-response.gamedata.json.firstSolved)/1000)-game.timeleft>1) { // check timer
+          var timeleft = deadline-Math.round(((Date.now)-response.gamedata.json.firstSolved)/1000);
+          if (timeleft < 0) timeleft = 0;
+          countdown(timeleft);
+        }
+      } else if (null==data.game.firstSolved) {
+        clearInterval(game.timer); // make sure timer is not running.
       }
-      // TODO check if game is really the same (map, seeds, targets). Just to be sure.
-      // TODO check robot position, just to be sure (but not during playback or while moving. Damn.)
-      // TODO Do we need to update the timer? Would require a new variable (timestamp of first found solution) - need that one anyway for accurate countdown when joining running game
     }
     else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
       console.log("Der Server ist schon eine Runde weiter");
@@ -196,6 +223,13 @@ function play(response) {
       display("Spiel neu geladen");
     }
   }  
+}
+
+function divergingRobots(a, b) {
+  for (var i=0; i<a.length; i++) {
+    if (!isDuplicate(a[i], b, ["color","x","y"])) return true;
+  }
+  return false;
 }
 
 function display(text) {
@@ -360,12 +394,15 @@ function targetReached() {
       d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
       data.me.solution = new Solution(turn.solution);
       if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
-	if (null==data.game.solution) countdown(deadline);
-        data.game.solution = new Solution(turn.solution); 
 	ismine = true;
 	var solved = Date.now();
 	data.game.solved = solved;
 	data.me.solved = solved;
+	if (null==data.game.solution) {
+          countdown(deadline);
+          data.game.firstSolved = solved;
+        }
+        data.game.solution = new Solution(turn.solution);
       }
     } else display("Ziel erreicht!");
     turn.solutions.push(new Solution(turn.solution));
@@ -439,6 +476,7 @@ function activateNextTarget() {
     data.me.round = turn.target;
     data.me.solution = null;
     data.game.solution = null;
+    data.game.firstSolved = null;
     data.game.solved = null;
     data.me.solved = null;
     ismine = false;
@@ -545,7 +583,7 @@ function rename() {
 }
 
 function letsGo() {
-  data.game = {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null};
+  data.game = {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null};
   map = {nested: [], tiles: [], targets: [], robots: null, pieces: null, seed: null};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
   createMap();
@@ -554,7 +592,21 @@ function letsGo() {
   activateNextTarget();
   display("Runde gestartet!");
   game.running = true;
-  ajax("start", {data}, nothing, solo);
+  ajax("start", {data}, checkGameStart, solo);
+}
+
+function checkGameStart(response) {
+  if (undefined!=response && null!=response && response.hasOwnProperty("error")) 
+    for (var i=0; i<response.error.length; i++) {
+      if (response.error[i]=="Duplicate entry '?' for key 'room'") {
+        restoreGame(response);
+        display("Ein anderes Spiel wurde früher begonnen.");
+      }
+    }
+  else {
+    endGame();
+    display("Spiel konnte nicht gestartet werden.");
+  }
 }
 
 function endGame() {
@@ -610,14 +662,14 @@ function endGame() {
   left.append("span").text("Spiel beendet!")
   left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
   data = {
-    game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
+    game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
     me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
 }
 
 function showLobby() {
   data = {
-    game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
+    game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
     me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
   document.querySelector("#map").innerHTML="";
