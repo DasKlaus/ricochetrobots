@@ -28,7 +28,7 @@ function nothing(response) {}
 function solo(response) {
   console.log("Netzwerkproblem, von nun an Singleplayer.");
   console.log(response);
-  d3.select("#players").text("Netzwerkfehler oder keine Netzwerkverbindung!");
+  document.querySelector("#players").innerHTML="Netzwerkfehler oder keine Netzwerkverbindung!";
   ajax = nothing;
   showLobby = letsGo;
   if (null==data.game || 0==data.game.seed) showLobby();
@@ -62,7 +62,7 @@ function restoreGame(response) {
 
 function enterGame(response) {
   data.game = response.gamedata.json;
-  map = {nested: [], tiles: [], targets: [], 
+  map = {nested: [], targets: [], 
          robots: response.gamedata.json.robots, 
 	 pieces: response.gamedata.json.pieces, 
 	 seed: response.gamedata.json.seed};
@@ -108,7 +108,7 @@ function enterGame(response) {
     data.me.points = game.points;
   } else {data.me.points = 0;}
   createMap();
-  d3.select(window).on("keydown", handleKey);
+  window.addEventListener("keydown", handleKey);
   activateNextTarget();
   game.running = true;
 }
@@ -141,7 +141,7 @@ function play(response) {
        {names.push(player["json"].name);}
   }
   text = (names.length>0) ? "Mitspieler: "+names.join(", ") : "";
-  d3.select("#players").text(text);
+  document.querySelector("#players").innerHTML=text;
   if (0==data.game.seed) { // currently not in a game
     if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // ... but there is a game
       restoreGame(response);
@@ -234,12 +234,17 @@ function divergingRobots(a, b) {
 
 function display(text) {
   console.info(text);
-  // d3.selectAll(".display").remove();
-  var box = d3.select("body").append("div").attr("class","display");
-  box.append("div").append("span").text(text);
-  box.attr("style", "top: -88px;");
-  setTimeout(function(){box.attr("style", "top: -4px; transition: top .5s;");},200);
-  setTimeout(function(){box.attr("style", "top: -88px;");},2000);
+  var box = document.createElement("div");
+  box.className = "display";
+  box.style = "top: -88px;";
+  var div = document.createElement("div");
+  var span = document.createElement("span");
+  span.innerHTML = text;
+  div.appendChild(span);
+  box.appendChild(div)
+  document.body.appendChild(box);
+  setTimeout(function(){box.style="top: -4px; transition: top .5s;";},200);
+  setTimeout(function(){box.style="top: -88px;";},2000);
   setTimeout(function(){box.remove();}, 5000);
 }
 
@@ -318,12 +323,12 @@ function getTile(dir) {
 }
 
 function moveHere() {
-  this.__data__.robot.move(this.__data__.dir);
+  this.robot.move(this.dir);
 }
 
 function setActive() {
   if (!game.running) return;
-  var robot = this.__data__ || this;
+  var robot = this.robot || this;
   if (turn.robot == robot) return;
   if (null !== turn.robot) document.querySelector(".robot.active").classList.remove("active");
   turn.robot = robot;
@@ -333,12 +338,11 @@ function setActive() {
 }
 
 function exorcise() { // remove ghosts
-  d3.selectAll(".ghost").filter(function(){
-	return (null === turn.robot) ? 1 : (!this.classList.contains(colors[turn.robot.color]));
-}).remove();
-  d3.selectAll(".arrow").filter(function(){
-	return (null === turn.robot) ? 1 : (!this.classList.contains(colors[turn.robot.color]));
-}).remove();
+  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  for (var i=0; i<ghosts.length; i++) {
+    if (null===turn.robot || !ghosts[i].classList.contains(colors[turn.robot.color]))
+      ghosts[i].remove();
+  }
 }
 
 function Solution(steps) {
@@ -354,7 +358,7 @@ function moveTo (robot, tile) {
   robot.tile = tile;
   robot.x = tile.x;
   robot.y = tile.y;
-  d3.select(".robot."+colors[robot.color]).attr("style", "top: "+scale*robot.y+"px; left: "+scale*robot.x+"px;");
+  document.querySelector(".robot."+colors[robot.color]).style="top: "+scale*robot.y+"px; left: "+scale*robot.x+"px;";
 }
 
 function moveRobot(dir) {
@@ -371,7 +375,10 @@ function moveRobot(dir) {
     targetReached();
   }
   //show next moves again
-  d3.selectAll(".ghost").remove(); d3.selectAll(".arrow").remove();
+  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  for (var i=0; i<ghosts.length; i++) {
+    ghosts[i].remove();
+  }
   if (null !== turn.robot) turn.robot.show();
 }
 
@@ -390,8 +397,8 @@ function targetReached() {
         document.querySelector("#points #turn").classList.remove("stranger");
         document.querySelector("#points #turn").innerHTML = turn.solution.length;
       }
-      document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML;
-      d3.select("#solution #best").append("span").attr("id","ownpoints").text(turn.solution.length);
+      document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML
+        +'<span id="ownpoints">'+turn.solution.length+'</span>';
       data.me.solution = new Solution(turn.solution);
       if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
 	ismine = true;
@@ -406,7 +413,10 @@ function targetReached() {
       }
     } else display("Ziel erreicht!");
     turn.solutions.push(new Solution(turn.solution));
-    d3.select("#solution #all").insert("div",":first-child").attr("class", "solution").node().innerHTML = document.querySelector("#solution #current").innerHTML;
+    var archivedsolution = document.createElement("div");
+    archivedsolution.className="solution";
+    archivedsolution.innerHTML=document.querySelector("#solution #current").innerHTML;
+    document.querySelector("#solution #all").prepend(archivedsolution);
   } else display("Diese Lösung hattest du schon!");
   // set all robots to beginning after a moment of time so the animation finishes first
   setTimeout(function(){
@@ -424,11 +434,21 @@ function showMoves() {
   for (var dir=0; dir<4; dir++) {
     var endpoint = robot.tile.getTile(dir);
     if (robot.tile == endpoint) continue; // nothing to do here
-    d3.select("#map").append("div").attr("class", "arrow "+colors[robot.color])
-      .attr("style", "top: "+scale*(d3.min([endpoint.y,robot.tile.y])+0.45)+"px; left: "+scale*(d3.min([endpoint.x,robot.tile.x])+0.45)+"px; width: "+scale*(Math.abs(endpoint.x-robot.tile.x)+0.1)+"px; height: "+scale*(Math.abs(endpoint.y-robot.tile.y)+0.1)+"px;");
-    d3.select("#map").selectAll("ghost").data([{robot: robot, dir: dir}]).enter().append("div").attr("class", "ghost "+colors[robot.color])
-      .attr("style", "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;")
-      .on("click", moveHere);
+    var arrow = document.createElement("div");
+    arrow.className = "arrow "+colors[robot.color];
+    arrow.style = "top: "+scale*(Math.min(endpoint.y,robot.tile.y)+0.45)+"px; "
+        +"left: "+scale*(Math.min(endpoint.x,robot.tile.x)+0.45)+"px; "
+        +"width: "+scale*(Math.abs(endpoint.x-robot.tile.x)+0.1)+"px; "
+        +"height: "+scale*(Math.abs(endpoint.y-robot.tile.y)+0.1)+"px;";
+    document.querySelector("#map").appendChild(arrow);
+    var ghost = document.createElement("div");
+    ghost.className = "ghost "+colors[robot.color];
+    ghost.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
+    ghost.robot = robot;
+    ghost.dir = dir;
+    ghost.onclick = moveHere;
+    document.querySelector("#map").appendChild(ghost);
+    // TODO append arrow heads
   }
 }
 
@@ -447,9 +467,8 @@ function Target(x,y,color,dir) {
   this.tile = map.nested[x][y];
   this.color = color;
   this.activate = function() {
-    d3.select(".target")
-      .attr("class","target fa fa-star "+colors[color])
-      .attr("style","top: "+scale*this.y+"px; left: "+scale*this.x+"px;");
+    document.querySelector(".target").className="target fa fa-star "+colors[color];
+    document.querySelector(".target").style="top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
     turn.target = map.targets.indexOf(this);
   }
   this.dir = dir; // first wall counterclockwise
@@ -501,9 +520,9 @@ function deactivateRobot() {
   exorcise();
 }
 
-function handleKey() {
+function handleKey(e) {
   if (!game.running) return;
-  var key = d3.event.keyCode;
+  var key = e.keyCode;
   if (key>48 && key<54) { // num keys 1-4
     if (key-49<map.robots.length) map.robots[key-49].activate();
   }
@@ -533,12 +552,14 @@ function stepBack() {
   moveTo(step.robot, step.start);
   turn.solution.pop();
   if (null != turn.robot) {
-    d3.selectAll(".ghost").remove();
-    d3.selectAll(".arrow").remove();
+    var ghosts = document.querySelectorAll(".ghost, .arrow");
+    for (var i=0; i<ghosts.length; i++) {
+      ghosts[i].remove();
+    }
     turn.robot.show();
   }
   var moves = document.querySelectorAll("#solution .move");
-  d3.select(moves[moves.length-1]).remove();
+  moves[moves.length-1].remove();
 }
 
 function stepAllBack() {
@@ -584,11 +605,11 @@ function rename() {
 
 function letsGo() {
   data.game = {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null};
-  map = {nested: [], tiles: [], targets: [], robots: null, pieces: null, seed: null};
+  map = {nested: [], targets: [], robots: null, pieces: null, seed: null};
   game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
   createMap();
   turn = null;
-  d3.select(window).on("keydown", handleKey);
+  window.addEventListener("keydown", handleKey);
   activateNextTarget();
   display("Runde gestartet!");
   game.running = true;
@@ -613,13 +634,14 @@ function endGame() {
   ajax("end", {}, nothing, solo);
   clearInterval(game.timer);
   game.timer = null;
-  d3.select(window).on("keydown", function(){});
-  d3.select("#points").attr("style", "");
-  d3.select("#time").attr("style", "");
+  window.addEventListener("keydown", function(){});
+  document.querySelector("#points").style="";
+  document.querySelector("#time").style="";
   document.querySelector("#map").innerHTML="";
   document.querySelector("#solutionwrapper").innerHTML="";
-  var right = d3.select("#solutionwrapper").append("div").attr("class", "text");
-  right.append("h3").text("Punkte");
+  var pointspace = document.createElement("div");
+  pointspace.className = "text";
+  pointspace.innerHTML = "<h3>Punkte</h3>"
   // add self
   players.push(data.me);
   // get worst score for calculations
@@ -650,17 +672,19 @@ function endGame() {
       player.points = worst+(10*(data.game.round-player.round)); // TODO can escalate points because penalty could get added again and again
     }
     var className = (player==data.me) ? "score me" : "score";
-    var score = right.append("div").attr("class", className).text(player.name);
-    score.append("span").attr("class", "pts").text(player.targets);
-    score.append("span").attr("class", "pts").text(player.points);
+    pointspace.innerHTML += '<div class="'+className+'">'+player.name
+        +'<span class="pts">'+player.targets+'</span><span class="pts">'+player.points+'</span></div>';
   }
-  
-  var left = d3.select("#map").append("div").attr("id", "lobby")
-  left.append("br");
-  left.append("br");
-  left.append("br");
-  left.append("span").text("Spiel beendet!")
-  left.append("div").attr("class", "btn start").on("click", showLobby).text("Zur Lobby!");
+  document.querySelector("#solutionwrapper").appendChild(pointspace);
+  var lobby = document.createElement("div");
+  lobby.id="lobby";
+  lobby.innerHTML="<br><br><br><span>Spiel beendet!</span>";
+  var button = document.createElement("div");
+  button.className="btn start";
+  button.onclick=showLobby;
+  button.innerHTML = "Zur Lobby!";
+  lobby.appendChild(button);
+  document.querySelector("#map").appendChild(lobby);
   data = {
     game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
     me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
@@ -673,10 +697,21 @@ function showLobby() {
     me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
   document.querySelector("#map").innerHTML="";
-  d3.select("#map").append("div").attr("id", "lobby").append("div").attr("class", "btn start").on("click", letsGo).text("Start!");
-  document.querySelector("#solutionwrapper").innerHTML="";
-  d3.select("#solutionwrapper").append("input").attr("class", "name").attr("type", "text").attr("value", data.me.name);
-  d3.select("#solutionwrapper").append("div").attr("class", "rename").on("click", rename).text("Umbenennen");
+  var lobby = document.createElement("div");
+  lobby.id="lobby";
+  var button = document.createElement("div");
+  button.className="btn start";
+  button.onclick=letsGo;
+  button.innerHTML="Start!";
+  lobby.appendChild(button);
+  document.querySelector("#map").appendChild(lobby);
+  var solutionwrapper = document.querySelector("#solutionwrapper");
+  solutionwrapper.innerHTML='<input type="text" class="name" value="'+data.me.name+'">';
+  var renamebutton = document.createElement("div");
+  renamebutton.className="rename";
+  renamebutton.onclick=rename;
+  renamebutton.innerHTML="Umbenennen";
+  solutionwrapper.appendChild(renamebutton);
   // TODO: do rooms per get variable
 }
 
@@ -696,19 +731,23 @@ function calculateTurnPoints() {
 function createMap() {
   // TODO: break off game, next target buttons
   // prepare html
-  d3.select("#time").attr("style", "visibility: visible;");
-  d3.select("#points").attr("style", "visibility: visible;");
+  document.querySelector("#time").style="visibility: visible;";
+  document.querySelector("#points").style="visibility: visible;";
   document.querySelector("#fullpoints").innerHTML = game.points;
   document.querySelector("#targets").innerHTML = game.targetsWon;
-  d3.select("#map").selectAll("*").remove();
-  var solutionwrapper = d3.select("#solutionwrapper");
-  solutionwrapper.selectAll("*").remove();
-  var sol = solutionwrapper.append("div").attr("id", "solution");
-  sol.append("div").attr("id", "best");
-  sol.append("div").attr("id", "all");
-  sol.append("div").attr("id", "current");
-  solutionwrapper.append("div").attr("class", "btn fa fa-step-backward").on("click", stepBack);
-  solutionwrapper.append("div").attr("class", "btn fa fa-fast-backward").on("click", stepAllBack);
+  document.querySelector("#map").innerHTML = "";
+  var solutionwrapper = document.querySelector("#solutionwrapper");
+  solutionwrapper.innerHTML = '<div id="solution">'
+      +'<div id="best"></div><div id="all"></div><div id="current"></div>'
+      +'<div>';
+  var stepBackButton = document.createElement("div");
+  stepBackButton.className="btn fa fa-step-backward";
+  stepBackButton.onclick=stepBack;
+  solutionwrapper.appendChild(stepBackButton);
+  var stepAllBackButton = document.createElement("div");
+  stepAllBackButton.className="btn fa fa-fast-backward";
+  stepAllBackButton.onclick=stepAllBack;
+  solutionwrapper.appendChild(stepAllBackButton);
   // build board from four pieces
   var pieces = []; // get actual pieces, not just indices here
   if (null == map.pieces) {
@@ -729,7 +768,6 @@ function createMap() {
     }
   }
   // generate raw tiles
-  map.tiles = [];
   map.nested = [];
   for (var x=0; x<16; x++) {
     var col = [];
@@ -737,26 +775,27 @@ function createMap() {
     for (var y=0; y<16; y++) {
       var tile = new Tile(x,y);
       col.push(tile);
-      map.tiles.push(tile);
     }
   }
   // set walls
-  for (var i=0; i<map.tiles.length; i++) {
-    var tile = map.tiles[i];
-    // set outer walls
-    if (tile.y == 0) tile.walls[0] = true;
-    if (tile.x == 0) tile.walls[1] = true;
-    if (tile.y == 15) tile.walls[2] = true;
-    if (tile.x == 15) tile.walls[3] = true;
-    // set walls to center
-    if ((tile.x == 6 || tile.x == 8) && (tile.y == 7 || tile.y == 8))
-      tile.walls[3] = true;
-    if ((tile.y == 6 || tile.y == 8) && (tile.x == 7 || tile.x == 8))
-      tile.walls[2] = true;
-    if ((tile.x == 7 || tile.x == 9) && (tile.y == 7 || tile.y == 8))
-      tile.walls[1] = true;
-    if ((tile.y == 7 || tile.y == 9) && (tile.x == 7 || tile.x == 8))
-      tile.walls[0] = true;
+  for (var x=0; x<map.nested.length; x++) {
+    for (var y=0; y<map.nested[x].length; y++) {
+      var tile = map.nested[x][y];
+      // set outer walls
+      if (tile.y == 0) tile.walls[0] = true;
+      if (tile.x == 0) tile.walls[1] = true;
+      if (tile.y == 15) tile.walls[2] = true;
+      if (tile.x == 15) tile.walls[3] = true;
+      // set walls to center
+      if ((tile.x == 6 || tile.x == 8) && (tile.y == 7 || tile.y == 8))
+        tile.walls[3] = true;
+      if ((tile.y == 6 || tile.y == 8) && (tile.x == 7 || tile.x == 8))
+        tile.walls[2] = true;
+      if ((tile.x == 7 || tile.x == 9) && (tile.y == 7 || tile.y == 8))
+        tile.walls[1] = true;
+      if ((tile.y == 7 || tile.y == 9) && (tile.x == 7 || tile.x == 8))
+        tile.walls[0] = true;
+    }
   }
   function rotate(x,y,rotation) {
     var newx = 0; 
@@ -805,23 +844,25 @@ function createMap() {
   }
   map.targets = shuffle(map.targets, map.seed);
   // draw map
-  d3.select("#map").selectAll("tiles").data(map.tiles).enter()
-    .append("div")
-      .attr("class", function(tile){
-          var classes = "tile";
-          for (var wall=0; wall<4; wall++) {
-	    if (tile.walls[wall]) classes += " wall"+directions[wall];
-          }
-          if ((tile.x == 7 && tile.y == 7) ||
-              (tile.x == 7 && tile.y == 8) ||
-              (tile.x == 8 && tile.y == 7) ||
-              (tile.x == 8 && tile.y == 8)) classes += " center";
-          return classes;
-        })
-      .attr("style", function(tile){
-          return "top: "+scale*tile.y+"px; left: "+scale*tile.x+"px;";
-        })
-      .on("click", deactivateRobot);
+  var mapspace = document.querySelector("#map");
+  for (var x=0; x<map.nested.length; x++) {
+    for (var y=0; y<map.nested[x].length; y++) {
+      var tile = map.nested[x][y];
+      var tilediv = document.createElement("div");
+      var classes = "tile";
+      for (var wall=0; wall<4; wall++) {
+	if (tile.walls[wall]) classes += " wall"+directions[wall];
+      }
+      if ((tile.x == 7 && tile.y == 7) ||
+          (tile.x == 7 && tile.y == 8) ||
+          (tile.x == 8 && tile.y == 7) ||
+          (tile.x == 8 && tile.y == 8)) classes += " center";
+      tilediv.className = classes;
+      tilediv.style = "top: "+scale*tile.y+"px; left: "+scale*tile.x+"px;";
+      tilediv.addEventListener("click", deactivateRobot);
+      mapspace.appendChild(tilediv);
+    }
+  }
   // generate robots
   if (null == map.robots) {
     map.robots = [];
@@ -846,20 +887,20 @@ function createMap() {
     }
   }
   // draw robots
-  d3.select("#map").selectAll("robots").data(map.robots).enter()
-    .append("div")
-      .attr("class", function(robot){
-        return classes = "robot "+colors[robot.color];
-      })
-      .attr("style", function(robot){
-        return "top: "+scale*robot.y+"px; left: "+scale*robot.x+"px;";
-      })
-      .on("mouseover", showMoves)
-      .on("mouseout", exorcise)
-      .on("click", setActive)
-    .text(function(d,i){return i+1;});
+  for (var i=0; i<map.robots.length; i++) {
+    var robot = map.robots[i];
+    var robotdiv = document.createElement("div");
+    robotdiv.className="robot "+colors[robot.color];
+    robotdiv.style="top: "+scale*robot.y+"px; left: "+scale*robot.x+"px;";
+    robotdiv.onmouseenter=showMoves;
+    robotdiv.onmouseout=exorcise;
+    robotdiv.addEventListener("click",setActive);
+    robotdiv.innerHTML=i;
+    robotdiv.robot=robot;
+    mapspace.appendChild(robotdiv);
+  }
   // create first target
-  d3.select("#map").append("div").attr("class", "target");
+  document.querySelector("#map").innerHTML+='<div class="target"></div>';
 }
 
 // map tiles
