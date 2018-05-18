@@ -323,7 +323,7 @@ function getTile(dir) {
 }
 
 function moveHere() {
-  this.robot.move(this.dir);
+  this.robot.move(this.direction);
 }
 
 function setActive() {
@@ -441,14 +441,17 @@ function showMoves() {
         +"width: "+scale*(Math.abs(endpoint.x-robot.tile.x)+0.1)+"px; "
         +"height: "+scale*(Math.abs(endpoint.y-robot.tile.y)+0.1)+"px;";
     document.querySelector("#map").appendChild(arrow);
+    var pointer = document.createElement("div");
+    pointer.className = "arrow head "+colors[robot.color]+" "+directions[dir];
+    pointer.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
+    document.querySelector("#map").appendChild(pointer);
     var ghost = document.createElement("div");
     ghost.className = "ghost "+colors[robot.color];
     ghost.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
     ghost.robot = robot;
-    ghost.dir = dir;
-    ghost.onclick = moveHere;
+    ghost.direction = dir;
+    ghost.addEventListener("click", moveHere);
     document.querySelector("#map").appendChild(ghost);
-    // TODO append arrow heads
   }
 }
 
@@ -563,7 +566,7 @@ function stepBack() {
 }
 
 function stepAllBack() {
-  // TODO gets called when round is wrong
+  if (null == turn || null == turn.solution) return;
   var count = turn.solution.length;
   for (var i=0; i<count; i++) stepBack();
 }
@@ -895,7 +898,7 @@ function createMap() {
     robotdiv.onmouseenter=showMoves;
     robotdiv.onmouseout=exorcise;
     robotdiv.addEventListener("click",setActive);
-    robotdiv.innerHTML=i;
+    robotdiv.innerHTML=i+1;
     robotdiv.robot=robot;
     mapspace.appendChild(robotdiv);
   }

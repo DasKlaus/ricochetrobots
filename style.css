@@ -1,8 +1,8 @@
-.blue {background-color: #364D9C; color: #364D9C;}
-.red {background-color: #D2365D; color: #D2365D;}
-.yellow {background-color: #E6B13B; color: #E6B13B;}
-.green {background-color: #6FCA34; color: #6FCA34;}
-.black {background-color: #888; color: #888;}
+.blue {background-color: #364D9C; color: #364D9C; border-color: #364D9C;}
+.red {background-color: #D2365D; color: #D2365D; border-color: #D2365D;}
+.yellow {background-color: #E6B13B; color: #E6B13B; border-color: #E6B13B;}
+.green {background-color: #6FCA34; color: #6FCA34; border-color: #6FCA34;}
+.black {background-color: #888; color: #888; border-color: #888;}
 body {padding: 5px;}
 h1 {text-align: center; margin: 2px;}
 .display {position: fixed; text-align: center; background: #eee; border: 4px solid #000; top: -4px; left: 50%; transform: translate(-50%,0); padding: 10px; width: 282px; font-family: sans; font-size: 18px; height: 60px; transition: top 1s ease-in;}
@@ -51,5 +51,11 @@ h1 {text-align: center; margin: 2px;}
 .target {position: absolute; color: #fff; margin: 1px; width: 18px; height: 18px; border-radius: 2px; padding: 1px; box-sizing: border-box;}    
 .robot {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 8px; z-index: 2; transition: top 1s, left 1s; cursor: pointer; color: #fff; font-size: 12px; font-family: sans; padding:1px; box-shadow: 0 0 1px #000;}
 .robot.active {box-shadow: inset 0 0 5px #000;}
-.ghost {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 10px; opacity: 0.5; cursor: pointer;}
+.ghost {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 10px; opacity: 0.5; cursor: pointer; z-index:2;}
 .arrow {position: absolute;}
+.arrow.head {width: 10px; height: 10px; box-sizing: border-box; margin: 5px; background-color: transparent;}
+.arrow.head.up {border-bottom: 15px solid; margin-top: 5px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
+.arrow.head.left {border-right: 15px solid; margin-left: 5px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
+.arrow.head.down {border-top: 15px solid; margin-top: 0px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
+.arrow.head.right {border-left:15px solid; margin-left: 0px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
+/*"up", "left", "down", "right"*/
