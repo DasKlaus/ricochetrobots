@@ -22,31 +22,5 @@
 </div>
 </div>
 <div id="players"></div>
-<script>
-var path = window.location.href.substring(0, window.location.href.lastIndexOf('/')+1);
-var scale = 20; // px per tile
-var deadline = 60; // seconds left in turn after solution was found
-var colors = ["red", "blue", "yellow", "green", "black"];
-var directions = ["up", "left", "down", "right"];
-
-var turn; // gets set every turn
-var map; // gets set on map creation
-var game; // gets set on game start
-
-var ajaxtime = Date.now(); // time the last ajax request was sent
-var ajaxspeed = 5000; // milliseconds between ajax requests
-
-var data = { // ajax data
-  game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
-  me: {name: "Gast", targets: 0, points: 0, round: 0, solved: null, solution: null}
-}
-
-var playback = null; // holds the solution for playback after turn has ended
-var ismine = false; // whether or not the found solution is by the player
-
-var players = []; // received data from other players
-
-ajax("init", {}, init, solo);
-</script>
 </body>
 </html>

@@ -1,3 +1,44 @@
+/* 
+ * #######################################
+ * #############    SETUP    #############
+ * #######################################
+ */
+var path = window.location.href.substring(0, window.location.href.lastIndexOf('/')+1);
+var scale = 20; // px per tile
+var deadline = 60; // seconds left in turn after solution was found
+var colors = ["red", "blue", "yellow", "green", "black"];
+var directions = ["up", "left", "down", "right"];
+
+var turn; // gets set every turn
+var map; // gets set on map creation
+var game; // gets set on game start
+
+var ajaxtime = Date.now(); // time the last ajax request was sent
+var ajaxspeed = 5000; // milliseconds between ajax requests
+
+var data = { // ajax data
+  game: {robots: null, pieces: null, seed: 0, round: 0, solved: null, solution: null},
+  me: {name: "Gast", targets: 0, points: 0, round: 0, solved: null, solution: null}
+}
+
+var playback = null; // holds the solution for playback after turn has ended
+var ismine = false; // whether or not the found solution is by the player
+
+var players = []; // received data from other players
+
+if (document.readyState === "complete" ||
+    (document.readyState !== "loading" && !document.documentElement.doScroll)) {
+  ajax("init", {}, init, solo);
+} else {
+  document.addEventListener("DOMContentLoaded", function(){ajax("init", {}, init, solo);});
+}
+
+/* 
+ * #######################################
+ * #############    AJAX    ##############
+ * #######################################
+ */
+
 function ajax(get, data, success, error) {
   var xhr = new XMLHttpRequest();
   xhr.open('PUT', path+'ajax.php?do='+get);
@@ -30,7 +71,7 @@ function solo(response) {
   console.log(response);
   document.querySelector("#players").innerHTML="Netzwerkfehler oder keine Netzwerkverbindung!";
   ajax = nothing;
-  showLobby = letsGo;
+  showLobby = startGame;
   if (null==data.game || 0==data.game.seed) showLobby();
 }
 
@@ -41,6 +82,670 @@ function init(response) {
   restoreGame(response);
   display("Laufendem Spiel beigetreten!");
 }
+
+function play(response) {
+  function getOwner() {
+    var owner = "Jemand";
+    if (null != response.gamedata.json.firstSolved) {
+      for (var i=0; i<players.length; i++) {
+        if (players[i].solved == response.gamedata.json.solved) owner = players[i].name;
+      }
+    }
+    return owner;
+  }
+  players = [];
+  var names = [];
+  for (var i=0; i<response.playerdata.length; i++) {
+    var player = response.playerdata[i];
+    if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) 
+      continue;
+    if (player.hasOwnProperty("me") && player["me"]) {
+      if (data.me.name=="Gast" && player["name"]!="Gast") {
+        data.me.name = player["name"];
+        if (null!=document.querySelector("input.name")) document.querySelector("input.name").value=data.me.name;
+      }
+      continue;
+    }
+    players.push(player["json"]);
+    if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
+       (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
+       {names.push(player["json"].name);}
+  }
+  text = (names.length>0) ? "Mitspieler: "+names.join(", ") : "";
+  document.querySelector("#players").innerHTML=text;
+  if (0==data.game.seed) { // currently not in a game
+    if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { 
+      // ... but there is a game
+      restoreGame(response);
+      display("Ein Spiel wurde gestartet!");
+    }
+  }
+  else { // currently in a game
+    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {
+      // ... but game has ended
+      endGame(); return;
+    }
+    if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
+      if ((response.gamedata.json.seed != data.game.seed && 0!=response.gamedata.json.seed)
+          || divergingRobots(response.gamedata.json.robots, data.game.robots)) {
+        // ... but there's a different game running
+        display("Spiel weicht vom Stand im Netzwerk ab und wird wiederhergestellt.");
+        restoreGame(response); 
+        return;
+      }
+      if (null!=response.gamedata.json.firstSolved) { // there is a solution
+        if (null==data.game.firstSolved) { // first solution found
+          var owner = getOwner();
+          ismine = false;
+	  data.game.firstSolved = response.gamedata.json.firstSolved;
+	  data.game.solved = response.gamedata.json.solved;
+	  data.game.solution = response.gamedata.json.solution;
+	  document.querySelector("#points #turn").classList.add("stranger");
+          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	  display(owner+" hat eine Lösung gefunden");
+	  game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
+	  if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
+	  countdown(game.timeleft);
+        }
+        else if (response.gamedata.json.firstSolved!=data.game.firstSolved) { // simultaneous solutions
+          if (response.gamedata.json.firstSolved<data.game.firstSolved) { // player wasn't first
+            var owner = getOwner();
+            display(owner+" war zuerst da!");
+	    data.game.firstSolved = response.gamedata.json.firstSolved;
+            game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
+	    if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
+	    countdown(game.timeleft);
+            if (data.game.solution.length>=response.gamedata.json.solution) { // player was not best, either
+              ismine = false;
+	      data.game.solved = response.gamedata.json.solved;
+	      data.game.solution = response.gamedata.json.solution;
+	      document.querySelector("#points #turn").classList.add("stranger");
+              document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+            }
+          }
+        }
+        else if (response.gamedata.json.solution.length<data.game.solution.length) { // faster solution
+          var owner = getOwner();
+          ismine = false;
+	  data.game.solved = response.gamedata.json.solved;
+	  data.game.solution = response.gamedata.json.solution;
+	  turn.points = 0;
+	  document.querySelector("#points #turn").classList.add("stranger");
+          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	  display(owner+" war besser!");
+        }
+        if (Math.abs(deadline-Math.round((Date.now)-response.gamedata.json.firstSolved)/1000)-game.timeleft>1) { 
+          // check timer
+          var timeleft = deadline-Math.round(((Date.now)-response.gamedata.json.firstSolved)/1000);
+          if (timeleft < 0) timeleft = 0;
+          countdown(timeleft);
+        }
+      } else if (null==data.game.firstSolved) {
+        clearInterval(game.timer); // make sure timer is not running.
+      }
+    }
+    else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
+      console.log("Der Server ist schon eine Runde weiter");
+      clearInterval(game.timer); // make sure the clock is no longer ticking
+      endTurn(); 
+    }
+    else if (data.me.round!=response.gamedata.json.round+1) { // off by more than one turn, or magically ahead
+      clearInterval(game.timer);
+      data.game = response.gamedata.json;
+      restoreGame(response); // best to redraw completely
+      display("Spiel neu geladen");
+    }
+  }  
+}
+
+function divergingRobots(a, b) {
+  for (var i=0; i<a.length; i++) {
+    if (!isDuplicate(a[i], b, ["color","x","y"])) return true;
+  }
+  return false;
+}
+
+function checkGameStart(response) {
+  if (undefined!=response && null!=response && response.hasOwnProperty("error")) 
+    for (var i=0; i<response.error.length; i++) {
+      if (response.error[i]=="Duplicate entry '?' for key 'room'") {
+        restoreGame(response);
+        display("Ein anderes Spiel wurde früher begonnen.");
+      }
+    }
+  else {
+    endGame();
+    display("Spiel konnte nicht gestartet werden.");
+  }
+}
+
+/* 
+ * #######################################
+ * #########    BASIC CLASSES    #########
+ * #######################################
+ */
+
+function Tile(x, y) {
+  this.x = x;
+  this.y = y;
+  this.getTile = getTile;
+  this.robot = null;
+  this.target = null;
+  this.walls = [false,false,false,false]; // index is direction
+}
+
+function Target(x,y,color,dir) {
+  this.x = x;
+  this.y = y;
+  this.tile = map.nested[x][y];
+  this.color = color;
+  this.activate = function() {
+    document.querySelector(".target").className="target fa fa-star "+colors[color];
+    document.querySelector(".target").style="top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
+    turn.target = map.targets.indexOf(this);
+  }
+  this.dir = dir; // first wall counterclockwise
+}
+
+function Robot(x,y,color) {
+  this.x = x;
+  this.y = y;
+  this.color = color;
+  this.tile = map.nested[x][y];
+  this.tile.robot = this;
+  this.move = moveRobot;
+  this.show = showMoves;
+  this.activate = setActive;
+}
+
+function deactivateRobot() {
+  if (null != turn.robot) 
+    document.querySelector(".robot.active").classList.remove("active");
+  turn.robot = null;
+  exorcise();
+}
+
+function Solution(steps) {
+  for (var i=0; i<steps.length; i++) {
+    this[i] = {color: steps[i].color, dir: steps[i].dir};
+  }
+  this.length = steps.length;
+}
+
+/* 
+ * #######################################
+ * #########    BASIC UTILITY    #########
+ * #######################################
+ */
+
+function getTile(dir) {
+  var x = this.x;
+  var y = this.y;
+  if (this.walls[dir]) return this;
+  var tile;
+  switch(dir) {
+    case 0: tile = map.nested[x][y-1]; break;
+    case 1: tile = map.nested[x-1][y]; break;
+    case 2: tile = map.nested[x][y+1]; break;
+    case 3: tile = map.nested[x+1][y]; break;
+    default: return this;
+  }
+  return (null == tile.robot) ? tile.getTile(dir) : this;
+}
+
+function moveHere() {
+  this.robot.move(this.direction);
+}
+
+function setActive() {
+  if (!game.running) return;
+  var robot = this.robot || this;
+  if (turn.robot == robot) return;
+  deactivateRobot();
+  exorcise();
+  turn.robot = robot;
+  robot.show();
+  document.querySelector(".robot."+colors[robot.color]).classList.add("active");
+}
+
+function moveTo (robot, tile) {
+  robot.tile.robot = null;
+  tile.robot = robot;
+  robot.tile = tile;
+  robot.x = tile.x;
+  robot.y = tile.y;
+  document.querySelector(".robot."+colors[robot.color]).style="top: "+scale*robot.y+"px; left: "+scale*robot.x+"px;";
+}
+
+function moveRobot(dir) {
+  if (!game.running) return;
+  var robot = this;
+  var endpoint = robot.tile.getTile(dir);
+  if (endpoint == robot.tile) return;
+  turn.solution.push({color: robot.color, dir: dir, robot: robot, start: robot.tile, end: endpoint});
+  document.querySelector("#solution #current").innerHTML += '<div class="move fa fa-arrow-'+directions[dir]+' '+colors[robot.color]+'"></div>';
+  moveTo(robot, endpoint);
+  //check if target is reached
+  if (null !== turn.target && endpoint.target == map.targets[turn.target] && 
+     (robot.color == map.targets[turn.target].color || map.targets[turn.target].color == 4)) {
+    targetReached();
+  }
+  //show next moves again
+  exorciseAll();
+  if (null !== turn.robot) turn.robot.show();
+}
+
+function stepBack() {
+  if (turn.solution.length==0) return;
+  step = turn.solution[turn.solution.length-1];
+  var dir = (step.dir>1) ? step.dir-2 : step.dir+2;
+  moveTo(step.robot, step.start);
+  turn.solution.pop();
+  if (null != turn.robot) {
+    exorciseAll();
+    turn.robot.show();
+  }
+  var moves = document.querySelectorAll("#solution .move");
+  moves[moves.length-1].remove();
+}
+
+function stepAllBack() {
+  if (null == turn || null == turn.solution) return;
+  var count = turn.solution.length;
+  for (var i=0; i<count; i++) stepBack();
+}
+
+/* 
+ * #######################################
+ * ##########    GUI HELPERS    ##########
+ * #######################################
+ */
+
+function display(text) {
+  console.info(text);
+  var box = document.createElement("div");
+  box.className = "display";
+  box.style = "top: -88px;";
+  var div = document.createElement("div");
+  var span = document.createElement("span");
+  span.innerHTML = text;
+  div.appendChild(span);
+  box.appendChild(div)
+  document.body.appendChild(box);
+  setTimeout(function(){box.style="top: -4px; transition: top .5s;";},200);
+  setTimeout(function(){box.style="top: -88px;";},2000);
+  setTimeout(function(){box.remove();}, 5000);
+}
+
+function handleKey(e) {
+  if (!game.running) return;
+  var key = e.keyCode;
+  if (key>48 && key<54) { // num keys 1-4
+    if (key-49<map.robots.length) map.robots[key-49].activate();
+  }
+  if (key>36 && key<41 && null!=turn.robot) { // arrow keys
+    switch (key) {
+      case 37: turn.robot.move(1); break;
+      case 38: turn.robot.move(0); break;
+      case 39: turn.robot.move(3); break;
+      case 40: turn.robot.move(2); break;
+    }
+  }
+  if (key==48) { // num key 0
+    deactivateRobot();
+  }
+  if (key==8) { // backspace
+    stepBack();
+  }
+  if (key==27) { // escape
+    stepAllBack();
+  }
+}
+
+function showMoves() {
+  if (!game.running) return;
+  var robot = this.robot || this;
+  if (turn.robot == robot && this.constructor != Robot) return;
+  exorcise();
+  for (var dir=0; dir<4; dir++) {
+    var endpoint = robot.tile.getTile(dir);
+    if (robot.tile == endpoint) continue; // nothing to do here
+    var arrow = document.createElement("div");
+    arrow.className = "arrow "+colors[robot.color];
+    arrow.style = "top: "+scale*(Math.min(endpoint.y,robot.tile.y)+0.45)+"px; "
+        +"left: "+scale*(Math.min(endpoint.x,robot.tile.x)+0.45)+"px; "
+        +"width: "+scale*(Math.abs(endpoint.x-robot.tile.x)+0.1)+"px; "
+        +"height: "+scale*(Math.abs(endpoint.y-robot.tile.y)+0.1)+"px;";
+    document.querySelector("#map").appendChild(arrow);
+    var pointer = document.createElement("div");
+    pointer.className = "arrow head "+colors[robot.color]+" "+directions[dir];
+    pointer.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
+    document.querySelector("#map").appendChild(pointer);
+    var ghost = document.createElement("div");
+    ghost.className = "ghost "+colors[robot.color];
+    ghost.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
+    ghost.robot = robot;
+    ghost.direction = dir;
+    ghost.addEventListener("click", moveHere);
+    document.querySelector("#map").appendChild(ghost);
+  }
+}
+
+function exorcise() { // remove ghosts of inactive Robots
+  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  for (var i=0; i<ghosts.length; i++) {
+    if (null===turn.robot || !ghosts[i].classList.contains(colors[turn.robot.color]))
+      ghosts[i].remove();
+  }
+}
+
+function exorciseAll() { // remove ghosts
+  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  for (var i=0; i<ghosts.length; i++) {
+    ghosts[i].remove();
+  }
+}
+
+/* 
+ * #######################################
+ * #########    GAMEPLAY    #########
+ * #######################################
+ */
+
+function targetReached() {
+  game.running = false;
+  deactivateRobot();
+  if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
+    if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) { // new personal "fastest"
+      if (null == turn.fastest && null==data.game.solution) display("Erster!");
+      else if (null == turn.fastest) display("Geschafft!");
+      else if (null==data.game.solution || turn.solution.length<data.game.solution.length) display("Rekord!"); 
+      else display("Schon besser!"); 
+      turn.fastest = turn.solutions.length;
+      turn.points = turn.solution.length;
+      if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
+        document.querySelector("#points #turn").classList.remove("stranger");
+        document.querySelector("#points #turn").innerHTML = turn.solution.length;
+      }
+      document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML
+        +'<span id="ownpoints">'+turn.solution.length+'</span>';
+      data.me.solution = new Solution(turn.solution);
+      if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
+	ismine = true;
+	var solved = Date.now();
+	data.game.solved = solved;
+	data.me.solved = solved;
+	if (null==data.game.solution) {
+          countdown(deadline);
+          data.game.firstSolved = solved;
+        }
+        data.game.solution = new Solution(turn.solution);
+      }
+    } else display("Ziel erreicht!");
+    turn.solutions.push(new Solution(turn.solution));
+    var archivedsolution = document.createElement("div");
+    archivedsolution.className="solution";
+    archivedsolution.innerHTML=document.querySelector("#solution #current").innerHTML;
+    document.querySelector("#solution #all").prepend(archivedsolution);
+  } else display("Diese Lösung hattest du schon!");
+  // set all robots to beginning after a moment of time so the animation finishes first
+  setTimeout(function(){
+      stepAllBack();
+      turn.solution = [];
+      game.running = true;
+    },1000);
+}
+
+function countdown(seconds) {
+  game.timeleft = seconds;
+  clearInterval(game.timer);
+  game.timer = setInterval(count,1000);
+}
+
+function count() {
+  var m = ("0"+Math.floor(game.timeleft/60)).slice(-2);
+  var s = ("0"+game.timeleft%60).slice(-2);
+  var time = document.getElementById("time");
+  time.innerHTML = m+":"+s;
+  if (game.timeleft>120) time.className="g120";
+  else if (game.timeleft>60) time.className="g60";
+  else if (game.timeleft>30) time.className="g30";
+  else if (game.timeleft>10) time.className="g10";
+  else time.className="l10";
+  if (game.timeleft < 1) {
+    clearInterval(game.timer);
+    endTurn();
+  }
+  game.timeleft--;
+}
+
+function endTurn() {
+  game.running = false;
+  game.points += calculateTurnPoints();
+  if (ismine) game.targetsWon++;
+  data.me.targets = game.targetsWon;
+  data.me.points = game.points;
+  document.querySelector("#fullpoints").innerHTML = game.points;
+  document.querySelector("#targets").innerHTML = game.targetsWon;
+  if (ismine) display("Punkt für dich!"); else display("Zeit abgelaufen"); // TODO write "Punkt für $name"
+  stepAllBack();
+  turn.target++;
+  playback = data.game.solution;
+  turn.solved = null;
+  turn.solution = null;
+  playSolution();
+  deactivateRobot();
+}
+
+function calculateTurnPoints() {
+  if (null == data.game.solution) return 0;
+  if (ismine) return data.game.solution.length;
+  var longest=0;
+  for (var i=0; i<players.length; i++) {
+    if (players[i].round == data.game.round 
+       && players[i].solution != null 
+       && players[i].solution.length>longest)
+      longest = players[i].solution.length;
+  }
+  return longest+10;
+}
+
+function playSolution() {
+  function playStep(i) {
+    var step = playback[i];
+    setTimeout(function(){
+      moveTo(map.robots[step.color], map.robots[step.color].tile.getTile(step.dir));
+    },(1000*(i+2)));
+  }
+  var delay = 2100;
+  if (null==playback) display("Keine Lösung");
+  else {
+    for (var i=0; i<playback.length; i++) {
+      playStep(i);
+      delay += 1000;
+    }
+  }
+  setTimeout(activateNextTarget, delay);
+}
+
+function activateNextTarget() {
+  document.querySelector("#solution #best").innerHTML = "";
+  document.querySelector("#solution #current").innerHTML = "";
+  document.querySelector("#solution #all").innerHTML = "";
+  document.querySelector("#points #turn").innerHTML = "&nbsp;";
+  document.querySelector("#time").classList.remove("l10");
+  document.querySelector("#time").innerHTML = "&nbsp;";
+  for (var i=0; i<map.robots.length; i++) {
+    data.game.robots[i].x = map.robots[i].x;
+    data.game.robots[i].y = map.robots[i].y;
+  }
+  if (null == turn || turn.target<map.targets.length) {
+    var current = (null == turn) ? 0 : turn.target;
+    turn = {solutions: [], solution: [], fastest: null, target: current, robot: null, points: 0};
+    map.targets[turn.target].activate();
+    document.querySelector("#round").innerHTML = turn.target+1;
+    game.running = true;
+    data.game.round = turn.target;
+    data.me.round = turn.target;
+    data.me.solution = null;
+    data.game.solution = null;
+    data.game.firstSolved = null;
+    data.game.solved = null;
+    data.me.solved = null;
+    ismine = false;
+  } else endGame();
+}
+
+/* 
+ * #######################################
+ * #########    OTHER HELPERS    #########
+ * #######################################
+ */
+
+function isDuplicate(piece, array, properties, obj=true) {
+  for (var i=0; i<array.length; i++) {
+    var different = false;
+    if (!obj) { // looking for an array within an array
+      if (piece.length != array[i].length) different = true;
+      else {
+        for (var elem=0; elem<piece.length; elem++) {
+          if (!isDuplicate(piece[elem], [array[i][elem]], properties)) different = true;
+        }
+      }
+    } else
+    for (var prop=0; prop<properties.length; prop++) {
+      if (piece[properties[prop]] != array[i][properties[prop]]) different = true;
+    }
+    if (!different) return true;
+  }
+  return false;
+}
+
+function shuffle(array, seed) {
+  while (seed.length<array.length) {seed = "0"+seed;}
+  var j, x, i;
+  for (i = array.length - 1; i > 0; i--) {
+    j = Math.floor(seed[i] * 0.1 * (i + 1));
+    x = array[i];
+    array[i] = array[j];
+    array[j] = x;
+  }
+  return array;
+}
+
+/* 
+ * #######################################
+ * ###    SCREENS & GAME MANAGEMENT    ###
+ * #######################################
+ */
+
+function showLobby() {
+  data = {
+    game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
+    me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
+  }
+  document.querySelector("#map").innerHTML="";
+  var lobby = document.createElement("div");
+  lobby.id="lobby";
+  var button = document.createElement("div");
+  button.className="btn start";
+  button.onclick=startGame;
+  button.innerHTML="Start!";
+  lobby.appendChild(button);
+  document.querySelector("#map").appendChild(lobby);
+  var solutionwrapper = document.querySelector("#solutionwrapper");
+  solutionwrapper.innerHTML='<input type="text" class="name" value="'+data.me.name+'">';
+  var renamebutton = document.createElement("div");
+  renamebutton.className="rename";
+  renamebutton.onclick=rename;
+  renamebutton.innerHTML="Umbenennen";
+  solutionwrapper.appendChild(renamebutton);
+  // TODO: do rooms per get variable
+}
+
+function rename() {
+  data.me.name = document.querySelector("input.name").value;
+}
+
+function startGame() {
+  data.game = {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null};
+  map = {nested: [], targets: [], robots: null, pieces: null, seed: null};
+  game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
+  createMap();
+  turn = null;
+  window.addEventListener("keydown", handleKey);
+  activateNextTarget();
+  display("Runde gestartet!");
+  game.running = true;
+  ajax("start", {data}, checkGameStart, solo);
+}
+
+function endGame() {
+  ajax("end", {}, nothing, solo);
+  clearInterval(game.timer);
+  game.timer = null;
+  window.addEventListener("keydown", function(){});
+  document.querySelector("#points").style="";
+  document.querySelector("#time").style="";
+  document.querySelector("#map").innerHTML="";
+  document.querySelector("#solutionwrapper").innerHTML="";
+  var pointspace = document.createElement("div");
+  pointspace.className = "text";
+  pointspace.innerHTML = "<h3>Punkte</h3>"
+  // add self
+  players.push(data.me);
+  // get worst score for calculations
+  var worst = 0;
+  for (var i=0; i<players.length; i++) {
+    if (null!=players[i].points && players[i].points > worst) worst = players[i].points;
+  }
+  // sort
+  players.sort(function(a, b){
+    if (a.targets < b.targets) return 1;
+    if (a.targets > b.targets) return -1;
+    if (a.points > b.points) return 1;
+    if (a.points < b.points) return -1;
+    return 0;
+  });
+  // loop again to display
+  for (var i=0; i<players.length; i++) {
+    player = players[i];
+    // calculate score if player not active anymore
+    if (player.round==data.game.round-1) { // last seen last round
+      if (null != player.solution) player.points = player.points+player.solution.length;
+      else if (null != data.game.solution) {ismine=false; player.points += calculateTurnPoints();}
+    }
+    if (player.round==data.game.round) { // last seen this round
+      player.points = player.points;
+    }
+    else { // too long ago, new points set
+      player.points = worst+(10*(data.game.round-player.round)); // TODO can escalate points because penalty could get added again and again
+    }
+    var className = (player==data.me) ? "score me" : "score";
+    pointspace.innerHTML += '<div class="'+className+'">'+player.name
+        +'<span class="pts">'+player.targets+'</span><span class="pts">'+player.points+'</span></div>';
+  }
+  document.querySelector("#solutionwrapper").appendChild(pointspace);
+  var lobby = document.createElement("div");
+  lobby.id="lobby";
+  lobby.innerHTML="<br><br><br><span>Spiel beendet!</span>";
+  var button = document.createElement("div");
+  button.className="btn start";
+  button.onclick=showLobby;
+  button.innerHTML = "Zur Lobby!";
+  lobby.appendChild(button);
+  document.querySelector("#map").appendChild(lobby);
+  data = {
+    game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
+    me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
+  }
+}
+
+/* 
+ * #######################################
+ * #########    GAME CREATION    #########
+ * #######################################
+ */
 
 function restoreGame(response) {
   console.log("Spiel wiederhergestellt");
@@ -111,626 +816,6 @@ function enterGame(response) {
   window.addEventListener("keydown", handleKey);
   activateNextTarget();
   game.running = true;
-}
-
-function play(response) {
-  function getOwner() {
-    var owner = "Jemand";
-    if (null != response.gamedata.json.firstSolved) {
-      for (var i=0; i<players.length; i++) {
-        if (players[i].solved == response.gamedata.json.solved) owner = players[i].name;
-      }
-    }
-    return owner;
-  }
-  players = [];
-  var names = [];
-  for (var i=0; i<response.playerdata.length; i++) {
-    var player = response.playerdata[i];
-    if (!player.hasOwnProperty("json") || null == player["json"] || "" == player["json"]) 
-      continue;
-    if (player.hasOwnProperty("me") && player["me"]) {
-      if (data.me.name=="Gast" && player["name"]!="Gast") {
-        data.me.name = player["name"];
-        if (null!=document.querySelector("input.name")) document.querySelector("input.name").value=data.me.name;
-      }
-      continue;
-    }
-    players.push(player["json"]);
-    if ((Date.now()-(new Date(player["time"]))<(5*ajaxspeed) && 
-       (null==response.gamedata || null==response.gamedata.json || data.game.round==player["json"].round)))
-       {names.push(player["json"].name);}
-  }
-  text = (names.length>0) ? "Mitspieler: "+names.join(", ") : "";
-  document.querySelector("#players").innerHTML=text;
-  if (0==data.game.seed) { // currently not in a game
-    if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { // ... but there is a game
-      restoreGame(response);
-      display("Ein Spiel wurde gestartet!");
-    }
-  }
-  else { // currently in a game
-    if (null==response.gamedata || null== response.gamedata.json || 0==response.gamedata.seed) {
-      // ... but game has ended
-      endGame(); return;
-    }
-    if (data.me.round==response.gamedata.json.round) { // we are in the same turn as the rest of the game
-      if ((response.gamedata.json.seed != data.game.seed && 0!=response.gamedata.json.seed)
-          || divergingRobots(response.gamedata.json.robots, data.game.robots)) {
-        // ... but there's a different game running
-        display("Spiel weicht vom Stand im Netzwerk ab und wird wiederhergestellt.");
-        restoreGame(response); 
-        return;
-      }
-      if (null!=response.gamedata.json.firstSolved) { // there is a solution
-        if (null==data.game.firstSolved) { // first solution found
-          var owner = getOwner();
-          ismine = false;
-	  data.game.firstSolved = response.gamedata.json.firstSolved;
-	  data.game.solved = response.gamedata.json.solved;
-	  data.game.solution = response.gamedata.json.solution;
-	  document.querySelector("#points #turn").classList.add("stranger");
-          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
-	  display(owner+" hat eine Lösung gefunden");
-	  game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
-	  if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
-	  countdown(game.timeleft);
-        }
-        else if (response.gamedata.json.firstSolved!=data.game.firstSolved) { // simultaneous solutions
-          if (response.gamedata.json.firstSolved<data.game.firstSolved) { // player wasn't first
-            var owner = getOwner();
-            display(owner+" war zuerst da!");
-	    data.game.firstSolved = response.gamedata.json.firstSolved;
-            game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
-	    if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
-	    countdown(game.timeleft);
-            if (data.game.solution.length>=response.gamedata.json.solution) { // player was not best, either
-              ismine = false;
-	      data.game.solved = response.gamedata.json.solved;
-	      data.game.solution = response.gamedata.json.solution;
-	      document.querySelector("#points #turn").classList.add("stranger");
-              document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
-            }
-          }
-        }
-        else if (response.gamedata.json.solution.length<data.game.solution.length) { // faster solution
-          var owner = getOwner();
-          ismine = false;
-	  data.game.solved = response.gamedata.json.solved;
-	  data.game.solution = response.gamedata.json.solution;
-	  turn.points = 0;
-	  document.querySelector("#points #turn").classList.add("stranger");
-          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
-	  display(owner+" war besser!");
-        }
-        if (Math.abs(deadline-Math.round((Date.now)-response.gamedata.json.firstSolved)/1000)-game.timeleft>1) { // check timer
-          var timeleft = deadline-Math.round(((Date.now)-response.gamedata.json.firstSolved)/1000);
-          if (timeleft < 0) timeleft = 0;
-          countdown(timeleft);
-        }
-      } else if (null==data.game.firstSolved) {
-        clearInterval(game.timer); // make sure timer is not running.
-      }
-    }
-    else if (data.me.round==response.gamedata.json.round-1) { // we are one turn off
-      console.log("Der Server ist schon eine Runde weiter");
-      clearInterval(game.timer); // make sure the clock is no longer ticking
-      endTurn(); 
-    }
-    else if (data.me.round!=response.gamedata.json.round+1) { // off by more than one turn, or magically ahead
-      clearInterval(game.timer);
-      data.game = response.gamedata.json;
-      restoreGame(response); // best to redraw completely
-      display("Spiel neu geladen");
-    }
-  }  
-}
-
-function divergingRobots(a, b) {
-  for (var i=0; i<a.length; i++) {
-    if (!isDuplicate(a[i], b, ["color","x","y"])) return true;
-  }
-  return false;
-}
-
-function display(text) {
-  console.info(text);
-  var box = document.createElement("div");
-  box.className = "display";
-  box.style = "top: -88px;";
-  var div = document.createElement("div");
-  var span = document.createElement("span");
-  span.innerHTML = text;
-  div.appendChild(span);
-  box.appendChild(div)
-  document.body.appendChild(box);
-  setTimeout(function(){box.style="top: -4px; transition: top .5s;";},200);
-  setTimeout(function(){box.style="top: -88px;";},2000);
-  setTimeout(function(){box.remove();}, 5000);
-}
-
-function count() {
-  var m = ("0"+Math.floor(game.timeleft/60)).slice(-2);
-  var s = ("0"+game.timeleft%60).slice(-2);
-  var time = document.getElementById("time");
-  time.innerHTML = m+":"+s;
-  if (game.timeleft>120) time.className="g120";
-  else if (game.timeleft>60) time.className="g60";
-  else if (game.timeleft>30) time.className="g30";
-  else if (game.timeleft>10) time.className="g10";
-  else time.className="l10";
-  if (game.timeleft < 1) {
-    clearInterval(game.timer);
-    endTurn();
-  }
-  game.timeleft--;
-}
-
-function endTurn() {
-  game.running = false;
-  game.points += calculateTurnPoints();
-  if (ismine) game.targetsWon++;
-  data.me.targets = game.targetsWon;
-  data.me.points = game.points;
-  document.querySelector("#fullpoints").innerHTML = game.points;
-  document.querySelector("#targets").innerHTML = game.targetsWon;
-  if (ismine) display("Punkt für dich!"); else display("Zeit abgelaufen"); // TODO write "Punkt für $name"
-  stepAllBack();
-  turn.target++;
-  playback = data.game.solution;
-  turn.solved = null;
-  turn.solution = null;
-  playSolution();
-  deactivateRobot();
-}
-
-function countdown(seconds) {
-  game.timeleft = seconds;
-  clearInterval(game.timer);
-  game.timer = setInterval(count,1000);
-}
-
-function playSolution() {
-  function playStep(i) {
-    var step = playback[i];
-    setTimeout(function(){
-      moveTo(map.robots[step.color], map.robots[step.color].tile.getTile(step.dir));
-    },(1000*(i+2)));
-  }
-  var delay = 2100;
-  if (null==playback) display("Keine Lösung");
-  else {
-    for (var i=0; i<playback.length; i++) {
-      playStep(i);
-      delay += 1000;
-    }
-  }
-  setTimeout(activateNextTarget, delay);
-}
-
-function getTile(dir) {
-  var x = this.x;
-  var y = this.y;
-  if (this.walls[dir]) return this;
-  var tile;
-  switch(dir) {
-    case 0: tile = map.nested[x][y-1]; break;
-    case 1: tile = map.nested[x-1][y]; break;
-    case 2: tile = map.nested[x][y+1]; break;
-    case 3: tile = map.nested[x+1][y]; break;
-    default: return this;
-  }
-  return (null == tile.robot) ? tile.getTile(dir) : this;
-}
-
-function moveHere() {
-  this.robot.move(this.direction);
-}
-
-function setActive() {
-  if (!game.running) return;
-  var robot = this.robot || this;
-  if (turn.robot == robot) return;
-  deactivateRobot();
-  exorcise();
-  turn.robot = robot;
-  robot.show();
-  document.querySelector(".robot."+colors[robot.color]).classList.add("active");
-}
-
-function exorcise() { // remove ghosts of inactive Robots
-  var ghosts = document.querySelectorAll(".ghost, .arrow");
-  for (var i=0; i<ghosts.length; i++) {
-    if (null===turn.robot || !ghosts[i].classList.contains(colors[turn.robot.color]))
-      ghosts[i].remove();
-  }
-}
-
-function exorciseAll() { // remove ghosts
-  var ghosts = document.querySelectorAll(".ghost, .arrow");
-  for (var i=0; i<ghosts.length; i++) {
-    ghosts[i].remove();
-  }
-}
-
-function Solution(steps) {
-  for (var i=0; i<steps.length; i++) {
-    this[i] = {color: steps[i].color, dir: steps[i].dir};
-  }
-  this.length = steps.length;
-}
-
-function moveTo (robot, tile) {
-  robot.tile.robot = null;
-  tile.robot = robot;
-  robot.tile = tile;
-  robot.x = tile.x;
-  robot.y = tile.y;
-  document.querySelector(".robot."+colors[robot.color]).style="top: "+scale*robot.y+"px; left: "+scale*robot.x+"px;";
-}
-
-function moveRobot(dir) {
-  if (!game.running) return;
-  var robot = this;
-  var endpoint = robot.tile.getTile(dir);
-  if (endpoint == robot.tile) return;
-  turn.solution.push({color: robot.color, dir: dir, robot: robot, start: robot.tile, end: endpoint});
-  document.querySelector("#solution #current").innerHTML += '<div class="move fa fa-arrow-'+directions[dir]+' '+colors[robot.color]+'"></div>';
-  moveTo(robot, endpoint);
-  //check if target is reached
-  if (null !== turn.target && endpoint.target == map.targets[turn.target] && 
-     (robot.color == map.targets[turn.target].color || map.targets[turn.target].color == 4)) {
-    targetReached();
-  }
-  //show next moves again
-  exorciseAll();
-  if (null !== turn.robot) turn.robot.show();
-}
-
-function targetReached() {
-  game.running = false;
-  deactivateRobot();
-  if (!isDuplicate(turn.solution, turn.solutions, ["color", "dir"], false)) {
-    if (null == turn.fastest || turn.solution.length<turn.solutions[turn.fastest].length) { // new personal "fastest"
-      if (null == turn.fastest && null==data.game.solution) display("Erster!");
-      else if (null == turn.fastest) display("Geschafft!");
-      else if (null==data.game.solution || turn.solution.length<data.game.solution.length) display("Rekord!"); 
-      else display("Schon besser!"); 
-      turn.fastest = turn.solutions.length;
-      turn.points = turn.solution.length;
-      if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
-        document.querySelector("#points #turn").classList.remove("stranger");
-        document.querySelector("#points #turn").innerHTML = turn.solution.length;
-      }
-      document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML
-        +'<span id="ownpoints">'+turn.solution.length+'</span>';
-      data.me.solution = new Solution(turn.solution);
-      if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
-	ismine = true;
-	var solved = Date.now();
-	data.game.solved = solved;
-	data.me.solved = solved;
-	if (null==data.game.solution) {
-          countdown(deadline);
-          data.game.firstSolved = solved;
-        }
-        data.game.solution = new Solution(turn.solution);
-      }
-    } else display("Ziel erreicht!");
-    turn.solutions.push(new Solution(turn.solution));
-    var archivedsolution = document.createElement("div");
-    archivedsolution.className="solution";
-    archivedsolution.innerHTML=document.querySelector("#solution #current").innerHTML;
-    document.querySelector("#solution #all").prepend(archivedsolution);
-  } else display("Diese Lösung hattest du schon!");
-  // set all robots to beginning after a moment of time so the animation finishes first
-  setTimeout(function(){
-      stepAllBack();
-      turn.solution = [];
-      game.running = true;
-    },1000);
-}
-
-function showMoves() {
-  if (!game.running) return;
-  var robot = this.robot || this;
-  if (turn.robot == robot && this.constructor != Robot) return;
-  exorcise();
-  for (var dir=0; dir<4; dir++) {
-    var endpoint = robot.tile.getTile(dir);
-    if (robot.tile == endpoint) continue; // nothing to do here
-    var arrow = document.createElement("div");
-    arrow.className = "arrow "+colors[robot.color];
-    arrow.style = "top: "+scale*(Math.min(endpoint.y,robot.tile.y)+0.45)+"px; "
-        +"left: "+scale*(Math.min(endpoint.x,robot.tile.x)+0.45)+"px; "
-        +"width: "+scale*(Math.abs(endpoint.x-robot.tile.x)+0.1)+"px; "
-        +"height: "+scale*(Math.abs(endpoint.y-robot.tile.y)+0.1)+"px;";
-    document.querySelector("#map").appendChild(arrow);
-    var pointer = document.createElement("div");
-    pointer.className = "arrow head "+colors[robot.color]+" "+directions[dir];
-    pointer.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
-    document.querySelector("#map").appendChild(pointer);
-    var ghost = document.createElement("div");
-    ghost.className = "ghost "+colors[robot.color];
-    ghost.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
-    ghost.robot = robot;
-    ghost.direction = dir;
-    ghost.addEventListener("click", moveHere);
-    document.querySelector("#map").appendChild(ghost);
-  }
-}
-
-function Tile(x, y) {
-  this.x = x;
-  this.y = y;
-  this.getTile = getTile;
-  this.robot = null;
-  this.target = null;
-  this.walls = [false,false,false,false]; // index is direction
-}
-
-function Target(x,y,color,dir) {
-  this.x = x;
-  this.y = y;
-  this.tile = map.nested[x][y];
-  this.color = color;
-  this.activate = function() {
-    document.querySelector(".target").className="target fa fa-star "+colors[color];
-    document.querySelector(".target").style="top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
-    turn.target = map.targets.indexOf(this);
-  }
-  this.dir = dir; // first wall counterclockwise
-}
-
-function activateNextTarget() {
-  document.querySelector("#solution #best").innerHTML = "";
-  document.querySelector("#solution #current").innerHTML = "";
-  document.querySelector("#solution #all").innerHTML = "";
-  document.querySelector("#points #turn").innerHTML = "&nbsp;";
-  document.querySelector("#time").classList.remove("l10");
-  document.querySelector("#time").innerHTML = "&nbsp;";
-  for (var i=0; i<map.robots.length; i++) {
-    data.game.robots[i].x = map.robots[i].x;
-    data.game.robots[i].y = map.robots[i].y;
-  }
-  if (null == turn || turn.target<map.targets.length) {
-    var current = (null == turn) ? 0 : turn.target;
-    turn = {solutions: [], solution: [], fastest: null, target: current, robot: null, points: 0};
-    map.targets[turn.target].activate();
-    document.querySelector("#round").innerHTML = turn.target+1;
-    game.running = true;
-    data.game.round = turn.target;
-    data.me.round = turn.target;
-    data.me.solution = null;
-    data.game.solution = null;
-    data.game.firstSolved = null;
-    data.game.solved = null;
-    data.me.solved = null;
-    ismine = false;
-  } else endGame();
-}
-
-function Robot(x,y,color) {
-  this.x = x;
-  this.y = y;
-  this.color = color;
-  this.tile = map.nested[x][y];
-  this.tile.robot = this;
-  this.move = moveRobot;
-  this.show = showMoves;
-  this.activate = setActive;
-}
-
-function deactivateRobot() {
-  if (null != turn.robot) 
-    document.querySelector(".robot.active").classList.remove("active");
-  turn.robot = null;
-  exorcise();
-}
-
-function handleKey(e) {
-  if (!game.running) return;
-  var key = e.keyCode;
-  if (key>48 && key<54) { // num keys 1-4
-    if (key-49<map.robots.length) map.robots[key-49].activate();
-  }
-  if (key>36 && key<41 && null!=turn.robot) { // arrow keys
-    switch (key) {
-      case 37: turn.robot.move(1); break;
-      case 38: turn.robot.move(0); break;
-      case 39: turn.robot.move(3); break;
-      case 40: turn.robot.move(2); break;
-    }
-  }
-  if (key==48) { // num key 0
-    deactivateRobot();
-  }
-  if (key==8) { // backspace
-    stepBack();
-  }
-  if (key==27) { // escape
-    stepAllBack();
-  }
-}
-
-function stepBack() {
-  if (turn.solution.length==0) return;
-  step = turn.solution[turn.solution.length-1];
-  var dir = (step.dir>1) ? step.dir-2 : step.dir+2;
-  moveTo(step.robot, step.start);
-  turn.solution.pop();
-  if (null != turn.robot) {
-    exorciseAll();
-    turn.robot.show();
-  }
-  var moves = document.querySelectorAll("#solution .move");
-  moves[moves.length-1].remove();
-}
-
-function stepAllBack() {
-  if (null == turn || null == turn.solution) return;
-  var count = turn.solution.length;
-  for (var i=0; i<count; i++) stepBack();
-}
-
-function isDuplicate(piece, array, properties, obj=true) {
-  for (var i=0; i<array.length; i++) {
-    var different = false;
-    if (!obj) { // looking for an array within an array
-      if (piece.length != array[i].length) different = true;
-      else {
-        for (var elem=0; elem<piece.length; elem++) {
-          if (!isDuplicate(piece[elem], [array[i][elem]], properties)) different = true;
-        }
-      }
-    } else
-    for (var prop=0; prop<properties.length; prop++) {
-      if (piece[properties[prop]] != array[i][properties[prop]]) different = true;
-    }
-    if (!different) return true;
-  }
-  return false;
-}
-
-function shuffle(array, seed) {
-  while (seed.length<array.length) {seed = "0"+seed;}
-  var j, x, i;
-  for (i = array.length - 1; i > 0; i--) {
-    j = Math.floor(seed[i] * 0.1 * (i + 1));
-    x = array[i];
-    array[i] = array[j];
-    array[j] = x;
-  }
-  return array;
-}
-
-function rename() {
-  data.me.name = document.querySelector("input.name").value;
-}
-
-function letsGo() {
-  data.game = {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null};
-  map = {nested: [], targets: [], robots: null, pieces: null, seed: null};
-  game = {timer: null, timeleft: null, running: false, points: 0, targetsWon: 0}
-  createMap();
-  turn = null;
-  window.addEventListener("keydown", handleKey);
-  activateNextTarget();
-  display("Runde gestartet!");
-  game.running = true;
-  ajax("start", {data}, checkGameStart, solo);
-}
-
-function checkGameStart(response) {
-  if (undefined!=response && null!=response && response.hasOwnProperty("error")) 
-    for (var i=0; i<response.error.length; i++) {
-      if (response.error[i]=="Duplicate entry '?' for key 'room'") {
-        restoreGame(response);
-        display("Ein anderes Spiel wurde früher begonnen.");
-      }
-    }
-  else {
-    endGame();
-    display("Spiel konnte nicht gestartet werden.");
-  }
-}
-
-function endGame() {
-  ajax("end", {}, nothing, solo);
-  clearInterval(game.timer);
-  game.timer = null;
-  window.addEventListener("keydown", function(){});
-  document.querySelector("#points").style="";
-  document.querySelector("#time").style="";
-  document.querySelector("#map").innerHTML="";
-  document.querySelector("#solutionwrapper").innerHTML="";
-  var pointspace = document.createElement("div");
-  pointspace.className = "text";
-  pointspace.innerHTML = "<h3>Punkte</h3>"
-  // add self
-  players.push(data.me);
-  // get worst score for calculations
-  var worst = 0;
-  for (var i=0; i<players.length; i++) {
-    if (null!=players[i].points && players[i].points > worst) worst = players[i].points;
-  }
-  // sort
-  players.sort(function(a, b){
-    if (a.targets < b.targets) return 1;
-    if (a.targets > b.targets) return -1;
-    if (a.points > b.points) return 1;
-    if (a.points < b.points) return -1;
-    return 0;
-  });
-  // loop again to display
-  for (var i=0; i<players.length; i++) {
-    player = players[i];
-    // calculate score if player not active anymore
-    if (player.round==data.game.round-1) { // last seen last round
-      if (null != player.solution) player.points = player.points+player.solution.length;
-      else if (null != data.game.solution) {ismine=false; player.points += calculateTurnPoints();}
-    }
-    if (player.round==data.game.round) { // last seen this round
-      player.points = player.points;
-    }
-    else { // too long ago, new points set
-      player.points = worst+(10*(data.game.round-player.round)); // TODO can escalate points because penalty could get added again and again
-    }
-    var className = (player==data.me) ? "score me" : "score";
-    pointspace.innerHTML += '<div class="'+className+'">'+player.name
-        +'<span class="pts">'+player.targets+'</span><span class="pts">'+player.points+'</span></div>';
-  }
-  document.querySelector("#solutionwrapper").appendChild(pointspace);
-  var lobby = document.createElement("div");
-  lobby.id="lobby";
-  lobby.innerHTML="<br><br><br><span>Spiel beendet!</span>";
-  var button = document.createElement("div");
-  button.className="btn start";
-  button.onclick=showLobby;
-  button.innerHTML = "Zur Lobby!";
-  lobby.appendChild(button);
-  document.querySelector("#map").appendChild(lobby);
-  data = {
-    game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
-    me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
-  }
-}
-
-function showLobby() {
-  data = {
-    game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
-    me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
-  }
-  document.querySelector("#map").innerHTML="";
-  var lobby = document.createElement("div");
-  lobby.id="lobby";
-  var button = document.createElement("div");
-  button.className="btn start";
-  button.onclick=letsGo;
-  button.innerHTML="Start!";
-  lobby.appendChild(button);
-  document.querySelector("#map").appendChild(lobby);
-  var solutionwrapper = document.querySelector("#solutionwrapper");
-  solutionwrapper.innerHTML='<input type="text" class="name" value="'+data.me.name+'">';
-  var renamebutton = document.createElement("div");
-  renamebutton.className="rename";
-  renamebutton.onclick=rename;
-  renamebutton.innerHTML="Umbenennen";
-  solutionwrapper.appendChild(renamebutton);
-  // TODO: do rooms per get variable
-}
-
-function calculateTurnPoints() {
-  if (null == data.game.solution) return 0;
-  if (ismine) return data.game.solution.length;
-  var longest=0;
-  for (var i=0; i<players.length; i++) {
-    if (players[i].round == data.game.round 
-       && players[i].solution != null 
-       && players[i].solution.length>longest)
-      longest = players[i].solution.length;
-  }
-  return longest+10;
 }
 
 function createMap() {
