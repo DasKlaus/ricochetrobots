@@ -54,7 +54,7 @@ function restoreGame(response) {
   data.game.solution = gamesolution;
   if (null != firstSolved) {
     game.timeleft = deadline-Math.round((Date.now()-firstSolved)/1000);
-    if (game.timeleft>deadline) game.timeleft=deadline; // everyone left the game before the timer was up
+    if (game.timeleft<0) game.timeleft=0; // everyone left the game before the timer run out
     countdown(game.timeleft);
     document.querySelector("#points #turn").innerHTML = data.game.solution.length;
   }
@@ -121,6 +121,7 @@ function play(response) {
         if (players[i].solved == response.gamedata.json.solved) owner = players[i].name;
       }
     }
+    return owner;
   }
   players = [];
   var names = [];
@@ -330,18 +331,25 @@ function setActive() {
   if (!game.running) return;
   var robot = this.robot || this;
   if (turn.robot == robot) return;
-  if (null !== turn.robot) document.querySelector(".robot.active").classList.remove("active");
-  turn.robot = robot;
+  deactivateRobot();
   exorcise();
+  turn.robot = robot;
   robot.show();
   document.querySelector(".robot."+colors[robot.color]).classList.add("active");
 }
 
-function exorcise() { // remove ghosts
+function exorcise() { // remove ghosts of inactive Robots
   var ghosts = document.querySelectorAll(".ghost, .arrow");
   for (var i=0; i<ghosts.length; i++) {
     if (null===turn.robot || !ghosts[i].classList.contains(colors[turn.robot.color]))
       ghosts[i].remove();
+  }
+}
+
+function exorciseAll() { // remove ghosts
+  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  for (var i=0; i<ghosts.length; i++) {
+    ghosts[i].remove();
   }
 }
 
@@ -375,10 +383,7 @@ function moveRobot(dir) {
     targetReached();
   }
   //show next moves again
-  var ghosts = document.querySelectorAll(".ghost, .arrow");
-  for (var i=0; i<ghosts.length; i++) {
-    ghosts[i].remove();
-  }
+  exorciseAll();
   if (null !== turn.robot) turn.robot.show();
 }
 
@@ -555,10 +560,7 @@ function stepBack() {
   moveTo(step.robot, step.start);
   turn.solution.pop();
   if (null != turn.robot) {
-    var ghosts = document.querySelectorAll(".ghost, .arrow");
-    for (var i=0; i<ghosts.length; i++) {
-      ghosts[i].remove();
-    }
+    exorciseAll();
     turn.robot.show();
   }
   var moves = document.querySelectorAll("#solution .move");
