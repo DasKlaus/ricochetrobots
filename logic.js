@@ -69,7 +69,7 @@ function nothing(response) {}
 function solo(response) {
   console.log("Netzwerkproblem, von nun an Singleplayer.");
   console.log(response);
-  document.querySelector("#players").innerHTML="Netzwerkfehler oder keine Netzwerkverbindung!";
+  document.querySelector(".ricochetrobots .players").innerHTML="Netzwerkfehler oder keine Netzwerkverbindung!";
   ajax = nothing;
   showLobby = startGame;
   if (null==data.game || 0==data.game.seed) showLobby();
@@ -102,7 +102,7 @@ function play(response) {
     if (player.hasOwnProperty("me") && player["me"]) {
       if (data.me.name=="Gast" && player["name"]!="Gast") {
         data.me.name = player["name"];
-        if (null!=document.querySelector("input.name")) document.querySelector("input.name").value=data.me.name;
+        if (null!=document.querySelector(".ricochetrobots input.name")) document.querySelector(".ricochetrobots input.name").value=data.me.name;
       }
       continue;
     }
@@ -112,7 +112,7 @@ function play(response) {
        {names.push(player["json"].name);}
   }
   text = (names.length>0) ? "Mitspieler: "+names.join(", ") : "";
-  document.querySelector("#players").innerHTML=text;
+  document.querySelector(".ricochetrobots .players").innerHTML=text;
   if (0==data.game.seed) { // currently not in a game
     if (null!=response.gamedata && null!= response.gamedata.json && 0!=response.gamedata.seed) { 
       // ... but there is a game
@@ -140,8 +140,8 @@ function play(response) {
 	  data.game.firstSolved = response.gamedata.json.firstSolved;
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
-	  document.querySelector("#points #turn").classList.add("stranger");
-          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	  document.querySelector(".ricochetrobots .points .turn").classList.add("stranger");
+          document.querySelector(".ricochetrobots .points .turn").innerHTML = response.gamedata.json.solution.length;
 	  display(owner+" hat eine Lösung gefunden");
 	  game.timeleft = deadline-Math.round((Date.now()-response.gamedata.json.firstSolved)/1000);
 	  if (game.timeleft<0) game.timeleft=1; // out of time (just in case of network problems)
@@ -159,8 +159,8 @@ function play(response) {
               ismine = false;
 	      data.game.solved = response.gamedata.json.solved;
 	      data.game.solution = response.gamedata.json.solution;
-	      document.querySelector("#points #turn").classList.add("stranger");
-              document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	      document.querySelector(".ricochetrobots .points .turn").classList.add("stranger");
+              document.querySelector(".points .turn").innerHTML = response.gamedata.json.solution.length;
             }
           }
         }
@@ -170,8 +170,8 @@ function play(response) {
 	  data.game.solved = response.gamedata.json.solved;
 	  data.game.solution = response.gamedata.json.solution;
 	  turn.points = 0;
-	  document.querySelector("#points #turn").classList.add("stranger");
-          document.querySelector("#points #turn").innerHTML = response.gamedata.json.solution.length;
+	  document.querySelector(".ricochetrobots .points .turn").classList.add("stranger");
+          document.querySelector(".ricochetrobots .points .turn").innerHTML = response.gamedata.json.solution.length;
 	  display(owner+" war besser!");
         }
         if (Math.abs(deadline-Math.round((Date.now)-response.gamedata.json.firstSolved)/1000)-game.timeleft>1) { 
@@ -240,8 +240,8 @@ function Target(x,y,color,dir) {
   this.tile = map.nested[x][y];
   this.color = color;
   this.activate = function() {
-    document.querySelector(".target").className="target fa fa-star "+colors[color];
-    document.querySelector(".target").style="top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
+    document.querySelector(".ricochetrobots .target").className="target fa fa-star "+colors[color];
+    document.querySelector(".ricochetrobots .target").style="top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
     turn.target = map.targets.indexOf(this);
   }
   this.dir = dir; // first wall counterclockwise
@@ -260,7 +260,7 @@ function Robot(x,y,color) {
 
 function deactivateRobot() {
   if (null != turn.robot) 
-    document.querySelector(".robot.active").classList.remove("active");
+    document.querySelector(".ricochetrobots .robot.active").classList.remove("active");
   turn.robot = null;
   exorcise();
 }
@@ -305,7 +305,7 @@ function setActive() {
   exorcise();
   turn.robot = robot;
   robot.show();
-  document.querySelector(".robot."+colors[robot.color]).classList.add("active");
+  document.querySelector(".ricochetrobots .robot."+colors[robot.color]).classList.add("active");
 }
 
 function moveTo (robot, tile) {
@@ -323,7 +323,7 @@ function moveRobot(dir) {
   var endpoint = robot.tile.getTile(dir);
   if (endpoint == robot.tile) return;
   turn.solution.push({color: robot.color, dir: dir, robot: robot, start: robot.tile, end: endpoint});
-  document.querySelector("#solution #current").innerHTML += '<div class="move fa fa-arrow-'+directions[dir]+' '+colors[robot.color]+'"></div>';
+  document.querySelector(".ricochetrobots .solution .current").innerHTML += '<div class="move fa fa-arrow-'+directions[dir]+' '+colors[robot.color]+'"></div>';
   moveTo(robot, endpoint);
   //check if target is reached
   if (null !== turn.target && endpoint.target == map.targets[turn.target] && 
@@ -345,7 +345,7 @@ function stepBack() {
     exorciseAll();
     turn.robot.show();
   }
-  var moves = document.querySelectorAll("#solution .move");
+  var moves = document.querySelectorAll(".ricochetrobots .solution .move");
   moves[moves.length-1].remove();
 }
 
@@ -371,7 +371,7 @@ function display(text) {
   span.innerHTML = text;
   div.appendChild(span);
   box.appendChild(div)
-  document.body.appendChild(box);
+  document.querySelector(".ricochetrobots").appendChild(box);
   setTimeout(function(){box.style="top: -4px; transition: top .5s;";},200);
   setTimeout(function(){box.style="top: -88px;";},2000);
   setTimeout(function(){box.remove();}, 5000);
@@ -416,23 +416,23 @@ function showMoves() {
         +"left: "+scale*(Math.min(endpoint.x,robot.tile.x)+0.45)+"px; "
         +"width: "+scale*(Math.abs(endpoint.x-robot.tile.x)+0.1)+"px; "
         +"height: "+scale*(Math.abs(endpoint.y-robot.tile.y)+0.1)+"px;";
-    document.querySelector("#map").appendChild(arrow);
+    document.querySelector(".ricochetrobots .map").appendChild(arrow);
     var pointer = document.createElement("div");
     pointer.className = "arrow head "+colors[robot.color]+" "+directions[dir];
     pointer.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
-    document.querySelector("#map").appendChild(pointer);
+    document.querySelector(".ricochetrobots .map").appendChild(pointer);
     var ghost = document.createElement("div");
     ghost.className = "ghost "+colors[robot.color];
     ghost.style = "top: "+scale*endpoint.y+"px; left: "+scale*endpoint.x+"px;";
     ghost.robot = robot;
     ghost.direction = dir;
     ghost.addEventListener("click", moveHere);
-    document.querySelector("#map").appendChild(ghost);
+    document.querySelector(".ricochetrobots .map").appendChild(ghost);
   }
 }
 
 function exorcise() { // remove ghosts of inactive Robots
-  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  var ghosts = document.querySelectorAll(".ricochetrobots .ghost, .ricochetrobots .arrow");
   for (var i=0; i<ghosts.length; i++) {
     if (null===turn.robot || !ghosts[i].classList.contains(colors[turn.robot.color]))
       ghosts[i].remove();
@@ -440,7 +440,7 @@ function exorcise() { // remove ghosts of inactive Robots
 }
 
 function exorciseAll() { // remove ghosts
-  var ghosts = document.querySelectorAll(".ghost, .arrow");
+  var ghosts = document.querySelectorAll(".ricochetrobots .ghost, .ricochetrobots .arrow");
   for (var i=0; i<ghosts.length; i++) {
     ghosts[i].remove();
   }
@@ -464,11 +464,11 @@ function targetReached() {
       turn.fastest = turn.solutions.length;
       turn.points = turn.solution.length;
       if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
-        document.querySelector("#points #turn").classList.remove("stranger");
-        document.querySelector("#points #turn").innerHTML = turn.solution.length;
+        document.querySelector(".ricochetrobots .points .turn").classList.remove("stranger");
+        document.querySelector(".ricochetrobots .points .turn").innerHTML = turn.solution.length;
       }
-      document.querySelector("#solution #best").innerHTML = document.querySelector("#solution #current").innerHTML
-        +'<span id="ownpoints">'+turn.solution.length+'</span>';
+      document.querySelector(".ricochetrobots .solution .best").innerHTML = document.querySelector(".ricochetrobots .solution .current").innerHTML
+        +'<span class="ownpoints">'+turn.solution.length+'</span>';
       data.me.solution = new Solution(turn.solution);
       if (null==data.game.solution || turn.solution.length<data.game.solution.length) {
 	ismine = true;
@@ -484,9 +484,9 @@ function targetReached() {
     } else display("Ziel erreicht!");
     turn.solutions.push(new Solution(turn.solution));
     var archivedsolution = document.createElement("div");
-    archivedsolution.className="solution";
-    archivedsolution.innerHTML=document.querySelector("#solution #current").innerHTML;
-    document.querySelector("#solution #all").prepend(archivedsolution);
+    archivedsolution.className="singlesolution";
+    archivedsolution.innerHTML=document.querySelector(".ricochetrobots .solution .current").innerHTML;
+    document.querySelector(".ricochetrobots .solution .all").prepend(archivedsolution);
   } else display("Diese Lösung hattest du schon!");
   // set all robots to beginning after a moment of time so the animation finishes first
   setTimeout(function(){
@@ -505,13 +505,13 @@ function countdown(seconds) {
 function count() {
   var m = ("0"+Math.floor(game.timeleft/60)).slice(-2);
   var s = ("0"+game.timeleft%60).slice(-2);
-  var time = document.getElementById("time");
+  var time = document.querySelector(".ricochetrobots .time");
   time.innerHTML = m+":"+s;
-  if (game.timeleft>120) time.className="g120";
-  else if (game.timeleft>60) time.className="g60";
-  else if (game.timeleft>30) time.className="g30";
-  else if (game.timeleft>10) time.className="g10";
-  else time.className="l10";
+  if (game.timeleft>120) time.className="time g120";
+  else if (game.timeleft>60) time.className="time g60";
+  else if (game.timeleft>30) time.className="time g30";
+  else if (game.timeleft>10) time.className="time g10";
+  else time.className="time l10";
   if (game.timeleft < 1) {
     clearInterval(game.timer);
     endTurn();
@@ -525,8 +525,8 @@ function endTurn() {
   if (ismine) game.targetsWon++;
   data.me.targets = game.targetsWon;
   data.me.points = game.points;
-  document.querySelector("#fullpoints").innerHTML = game.points;
-  document.querySelector("#targets").innerHTML = game.targetsWon;
+  document.querySelector(".ricochetrobots .fullpoints").innerHTML = game.points;
+  document.querySelector(".ricochetrobots .targets").innerHTML = game.targetsWon;
   if (ismine) display("Punkt für dich!"); else display("Zeit abgelaufen"); // TODO write "Punkt für $name"
   stepAllBack();
   turn.target++;
@@ -569,12 +569,12 @@ function playSolution() {
 }
 
 function activateNextTarget() {
-  document.querySelector("#solution #best").innerHTML = "";
-  document.querySelector("#solution #current").innerHTML = "";
-  document.querySelector("#solution #all").innerHTML = "";
-  document.querySelector("#points #turn").innerHTML = "&nbsp;";
-  document.querySelector("#time").classList.remove("l10");
-  document.querySelector("#time").innerHTML = "&nbsp;";
+  document.querySelector(".ricochetrobots .solution .best").innerHTML = "";
+  document.querySelector(".ricochetrobots .solution .current").innerHTML = "";
+  document.querySelector(".ricochetrobots .solution .all").innerHTML = "";
+  document.querySelector(".ricochetrobots .points .turn").innerHTML = "&nbsp;";
+  document.querySelector(".ricochetrobots .time").classList.remove("l10");
+  document.querySelector(".ricochetrobots .time").innerHTML = "&nbsp;";
   for (var i=0; i<map.robots.length; i++) {
     data.game.robots[i].x = map.robots[i].x;
     data.game.robots[i].y = map.robots[i].y;
@@ -583,7 +583,7 @@ function activateNextTarget() {
     var current = (null == turn) ? 0 : turn.target;
     turn = {solutions: [], solution: [], fastest: null, target: current, robot: null, points: 0};
     map.targets[turn.target].activate();
-    document.querySelector("#round").innerHTML = turn.target+1;
+    document.querySelector(".ricochetrobots .round").innerHTML = turn.target+1;
     game.running = true;
     data.game.round = turn.target;
     data.me.round = turn.target;
@@ -644,16 +644,16 @@ function showLobby() {
     game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
     me: {name: function(){return data.me.name;}(), targets: 0, points: 0, round: 0, solved: null, solution: null},
   }
-  document.querySelector("#map").innerHTML="";
+  document.querySelector(".ricochetrobots .map").innerHTML="";
   var lobby = document.createElement("div");
-  lobby.id="lobby";
+  lobby.className="lobby";
   var button = document.createElement("div");
   button.className="btn start";
   button.onclick=startGame;
   button.innerHTML="Start!";
   lobby.appendChild(button);
-  document.querySelector("#map").appendChild(lobby);
-  var solutionwrapper = document.querySelector("#solutionwrapper");
+  document.querySelector(".ricochetrobots .map").appendChild(lobby);
+  var solutionwrapper = document.querySelector(".ricochetrobots .solutionwrapper");
   solutionwrapper.innerHTML='<input type="text" class="name" value="'+data.me.name+'">';
   var renamebutton = document.createElement("div");
   renamebutton.className="rename";
@@ -664,7 +664,7 @@ function showLobby() {
 }
 
 function rename() {
-  data.me.name = document.querySelector("input.name").value;
+  data.me.name = document.querySelector(".ricochetrobots input.name").value;
 }
 
 function startGame() {
@@ -685,10 +685,10 @@ function endGame() {
   clearInterval(game.timer);
   game.timer = null;
   window.addEventListener("keydown", function(){});
-  document.querySelector("#points").style="";
-  document.querySelector("#time").style="";
-  document.querySelector("#map").innerHTML="";
-  document.querySelector("#solutionwrapper").innerHTML="";
+  document.querySelector(".ricochetrobots .points").style="";
+  document.querySelector(".ricochetrobots .time").style="";
+  document.querySelector(".ricochetrobots .map").innerHTML="";
+  document.querySelector(".ricochetrobots .solutionwrapper").innerHTML="";
   var pointspace = document.createElement("div");
   pointspace.className = "text";
   pointspace.innerHTML = "<h3>Punkte</h3>"
@@ -725,16 +725,16 @@ function endGame() {
     pointspace.innerHTML += '<div class="'+className+'">'+player.name
         +'<span class="pts">'+player.targets+'</span><span class="pts">'+player.points+'</span></div>';
   }
-  document.querySelector("#solutionwrapper").appendChild(pointspace);
+  document.querySelector(".ricochetrobots .solutionwrapper").appendChild(pointspace);
   var lobby = document.createElement("div");
-  lobby.id="lobby";
+  lobby.className="lobby";
   lobby.innerHTML="<br><br><br><span>Spiel beendet!</span>";
   var button = document.createElement("div");
   button.className="btn start";
   button.onclick=showLobby;
   button.innerHTML = "Zur Lobby!";
   lobby.appendChild(button);
-  document.querySelector("#map").appendChild(lobby);
+  document.querySelector(".ricochetrobots .map").appendChild(lobby);
   data = {
     game: {robots: null, pieces: null, seed: 0, round: 0, firstSolved: null, solved: null, solution: null},
     me: {name: data.me.name, targets: 0, points: 0, round: 0, solved: null, solution: null},
@@ -761,7 +761,7 @@ function restoreGame(response) {
     game.timeleft = deadline-Math.round((Date.now()-firstSolved)/1000);
     if (game.timeleft<0) game.timeleft=0; // everyone left the game before the timer run out
     countdown(game.timeleft);
-    document.querySelector("#points #turn").innerHTML = data.game.solution.length;
+    document.querySelector(".ricochetrobots .points .turn").innerHTML = data.game.solution.length;
   }
 }
 
@@ -821,14 +821,14 @@ function enterGame(response) {
 function createMap() {
   // TODO: break off game, next target buttons
   // prepare html
-  document.querySelector("#time").style="visibility: visible;";
-  document.querySelector("#points").style="visibility: visible;";
-  document.querySelector("#fullpoints").innerHTML = game.points;
-  document.querySelector("#targets").innerHTML = game.targetsWon;
-  document.querySelector("#map").innerHTML = "";
-  var solutionwrapper = document.querySelector("#solutionwrapper");
-  solutionwrapper.innerHTML = '<div id="solution">'
-      +'<div id="best"></div><div id="all"></div><div id="current"></div>'
+  document.querySelector(".ricochetrobots .time").style="visibility: visible;";
+  document.querySelector(".ricochetrobots .points").style="visibility: visible;";
+  document.querySelector(".ricochetrobots .fullpoints").innerHTML = game.points;
+  document.querySelector(".ricochetrobots .targets").innerHTML = game.targetsWon;
+  document.querySelector(".ricochetrobots .map").innerHTML = "";
+  var solutionwrapper = document.querySelector(".ricochetrobots .solutionwrapper");
+  solutionwrapper.innerHTML = '<div class="solution">'
+      +'<div class="best"></div><div class="all"></div><div class="current"></div>'
       +'<div>';
   var stepBackButton = document.createElement("div");
   stepBackButton.className="btn fa fa-step-backward";
@@ -934,7 +934,7 @@ function createMap() {
   }
   map.targets = shuffle(map.targets, map.seed);
   // draw map
-  var mapspace = document.querySelector("#map");
+  var mapspace = document.querySelector(".ricochetrobots .map");
   for (var x=0; x<map.nested.length; x++) {
     for (var y=0; y<map.nested[x].length; y++) {
       var tile = map.nested[x][y];

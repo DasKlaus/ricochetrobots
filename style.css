@@ -1,61 +1,60 @@
-.blue {background-color: #364D9C; color: #364D9C; border-color: #364D9C;}
-.red {background-color: #D2365D; color: #D2365D; border-color: #D2365D;}
-.yellow {background-color: #E6B13B; color: #E6B13B; border-color: #E6B13B;}
-.green {background-color: #6FCA34; color: #6FCA34; border-color: #6FCA34;}
-.black {background-color: #888; color: #888; border-color: #888;}
-body {padding: 5px;}
-h1 {text-align: center; margin: 2px;}
-.display {position: absolute; text-align: center; background: #eee; border: 4px solid #000; top: -4px; left: 50%; transform: translate(-50%,0); padding: 10px; width: 282px; font-family: sans; font-size: 18px; height: 60px; transition: top 1s ease-in;}
-.display div {position: relative; height: 100%; width: 100%;}
-.display div span {display: block; position: absolute; width: 100%; bottom: 0;}
-#wrap {display: block; text-align: center; margin: 0 auto;}
-#head {width: 570px; text-align: center; position: relative; margin: 12px auto; height: 58px; padding: 10px; box-sizing: border-box;}
-#points, #time {position: absolute; bottom: 0; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-family: sans; font-size: 35px; width: 100px; text-align: center; transition: color 5s;}
-#points {text-align: left; right: 0;}
-#points #turn.stranger {color: #e12;}
-#points div {float: right; text-align: center; font-size: 10px; color: #888; line-height: 14px; margin-top: -1px;}
-#time {text-align: right; color: #ddd; left: 0;}
-#time.g120 {color: #ddd;}
-#time.g60 {color: #888;}
-#time.g30 {color: #000;}
-#time.g10 {color: #c82;}
-#time.l10 {color: #e12;}
-#map .btn, #solutionwrapper .rename, #solutionwrapper input.name {width: 155px; text-align: center; display: inline-block; border-radius: 25px; padding: 10px; background-color: #888; color: #fff; font-family: sans; font-weight: bold; font-size: 20px; margin: 10px 0; border: 2px solid #000; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}
-#solutionwrapper input.name {color: #000; background-color: #fff; top:25%;}
-#map #lobby {text-align: center; font-family: sans;}
-#solutionwrapper h3 {text-align: center;}
-#solutionwrapper .text {font-family: sans; padding: 20px;}
-#solutionwrapper .pts {float: right; display: block; width: 60px; text-align: right;}
-#solutionwrapper .score {margin-bottom: 20px;}
-#solutionwrapper .score.me {font-weight: bold;}
-#map {display: inline-block; vertical-align: top; position: relative; height: 320px; width: 320px; border: 2px solid #000; background-color: #eee; margin: 0 8px;}
-#map #lobby {width: 100%; height: 100%; border: 2px solid #000; box-sizing: border-box;}
-#solutionwrapper {display: inline-block; position: relative; vertical-align: top; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin: 0 8px; box-sizing: border-box; text-align: left;}
-#solutionwrapper .btn {position: absolute; bottom: 10px; right: 40px; cursor: pointer;}
-#solutionwrapper .btn:last-child {right: 10px;}
-#solution {display: flex; flex-direction: column; width: 100%; height: 100%;}
-#solution #best #ownpoints {float: right;}
-#solution #best {padding: 10px; border-bottom: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
-#solution #all {overflow: auto; flex: 1 1 auto;}
-#solution #all .solution {padding: 10px; border-bottom: 1px dotted #000;}
-#solution #all .solution:last-child {border: none;}
-#solution #current {padding: 10px 50px 10px 10px; border-top: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
-#solution .move {background-color: transparent;}
-#players {min-height: 58px; width: 570px; border: 4px solid #000; background-color: #eee; margin: 12px auto; box-sizing: border-box; text-align: center; padding:10px; font-family: sans; line-height: 30px;}
-.tile {width: 20px; height: 20px; background-color: #eee; box-sizing: border-box; border: 1px solid #aaa; position: absolute;}
-.tile.wallup {border-top: 2px solid #000;}
-.tile.wallleft {border-left: 2px solid #000;}
-.tile.walldown {border-bottom: 2px solid #000;}
-.tile.wallright {border-right: 2px solid #000;}
-.tile.center {background-color: #000;}
-.target {position: absolute; color: #fff; margin: 1px; width: 18px; height: 18px; border-radius: 2px; padding: 1px; box-sizing: border-box;}    
-.robot {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 8px; z-index: 2; transition: top 1s, left 1s; cursor: pointer; color: #fff; font-size: 12px; font-family: sans; padding:1px; box-shadow: 0 0 1px #000; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;}
-.robot.active {box-shadow: inset 0 0 5px #000;}
-.ghost {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 10px; opacity: 0.5; cursor: pointer; z-index:2;}
-.arrow {position: absolute;}
-.arrow.head {width: 10px; height: 10px; box-sizing: border-box; margin: 5px; background-color: transparent;}
-.arrow.head.up {border-bottom: 15px solid; margin-top: 5px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
-.arrow.head.left {border-right: 15px solid; margin-left: 5px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
-.arrow.head.down {border-top: 15px solid; margin-top: 0px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
-.arrow.head.right {border-left:15px solid; margin-left: 0px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
-/*"up", "left", "down", "right"*/
+.ricochetrobots {position: relative;}
+.ricochetrobots .blue {background-color: #364D9C; color: #364D9C; border-color: #364D9C;}
+.ricochetrobots .red {background-color: #D2365D; color: #D2365D; border-color: #D2365D;}
+.ricochetrobots .yellow {background-color: #E6B13B; color: #E6B13B; border-color: #E6B13B;}
+.ricochetrobots .green {background-color: #6FCA34; color: #6FCA34; border-color: #6FCA34;}
+.ricochetrobots .black {background-color: #888; color: #888; border-color: #888;}
+.ricochetrobots h1 {text-align: center; margin: 2px;}
+.ricochetrobots .display {position: absolute; text-align: center; background: #eee; border: 4px solid #000; top: -4px; left: 50%; transform: translate(-50%,0); padding: 10px; width: 282px; font-family: sans; font-size: 18px; height: 46px; transition: top 1s ease-in;}
+.ricochetrobots .display div {position: relative; height: 100%; width: 100%;}
+.ricochetrobots .display div span {display: block; position: absolute; width: 100%; bottom: 0;}
+.ricochetrobots .wrap {display: block; text-align: center; margin: 0 auto;}
+.ricochetrobots .head {width: 570px; text-align: center; position: relative; margin: 12px auto; height: 58px; .ricochetrobots padding: 10px; box-sizing: border-box;}
+.ricochetrobots .points, .ricochetrobots .time {position: absolute; bottom: 0; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-family: sans; font-size: 35px; width: 100px; text-align: center; transition: color 5s;}
+.ricochetrobots .points {text-align: left; right: 0;}
+.ricochetrobots .points .turn.stranger {color: #e12;}
+.ricochetrobots .points div {float: right; text-align: center; font-size: 10px; color: #888; line-height: 14px; margin-top: -1px;}
+.ricochetrobots .time {text-align: right; color: #ddd; left: 0;}
+.ricochetrobots .time.g120 {color: #ddd;}
+.ricochetrobots .time.g60 {color: #888;}
+.ricochetrobots .time.g30 {color: #000;}
+.ricochetrobots .time.g10 {color: #c82;}
+.ricochetrobots .time.l10 {color: #e12;}
+.ricochetrobots .map .btn, .ricochetrobots .solutionwrapper .rename, .ricochetrobots .solutionwrapper input.name {width: 155px; text-align: center; display: inline-block; border-radius: 25px; padding: 10px; background-color: #888; color: #fff; font-family: sans; font-weight: bold; font-size: 20px; margin: 10px 0; border: 2px solid #000; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}
+.ricochetrobots .solutionwrapper input.name {color: #000; background-color: #fff; top:25%;}
+.ricochetrobots .map .lobby {text-align: center; font-family: sans;}
+.ricochetrobots .solutionwrapper h3 {text-align: center;}
+.ricochetrobots .solutionwrapper .text {font-family: sans; padding: 20px;}
+.ricochetrobots .solutionwrapper .pts {float: right; display: block; width: 60px; text-align: right;}
+.ricochetrobots .solutionwrapper .score {margin-bottom: 20px;}
+.ricochetrobots .solutionwrapper .score.me {font-weight: bold;}
+.ricochetrobots .map {display: inline-block; vertical-align: top; position: relative; height: 320px; width: 320px; border: 2px solid #000; background-color: #eee; margin: 0 8px;}
+.ricochetrobots .map .lobby {width: 100%; height: 100%; border: 2px solid #000; box-sizing: border-box;}
+.ricochetrobots .solutionwrapper {display: inline-block; position: relative; vertical-align: top; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin: 0 8px; box-sizing: border-box; text-align: left;}
+.ricochetrobots .solutionwrapper .btn {position: absolute; bottom: 10px; right: 40px; cursor: pointer;}
+.ricochetrobots .solutionwrapper .btn:last-child {right: 10px;}
+.ricochetrobots .solution {display: flex; flex-direction: column; width: 100%; height: 100%;}
+.ricochetrobots .solution .best .ownpoints {float: right;}
+.ricochetrobots .solution .best {padding: 10px; border-bottom: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
+.ricochetrobots .solution .all {overflow: auto; flex: 1 1 auto;}
+.ricochetrobots .solution .all .singlesolution {padding: 10px; border-bottom: 1px dotted #000;}
+.ricochetrobots .solution .all .singlesolution:last-child {border: none;}
+.ricochetrobots .solution .current {padding: 10px 50px 10px 10px; border-top: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
+.ricochetrobots .solution .move {background-color: transparent;}
+.ricochetrobots .players {min-height: 58px; width: 570px; border: 4px solid #000; background-color: #eee; margin: 12px auto; box-sizing: border-box; text-align: center; padding:10px; font-family: sans; line-height: 30px;}
+.ricochetrobots .tile {width: 20px; height: 20px; background-color: #eee; box-sizing: border-box; border: 1px solid #aaa; position: absolute;}
+.ricochetrobots .tile.wallup {border-top: 2px solid #000;}
+.ricochetrobots .tile.wallleft {border-left: 2px solid #000;}
+.ricochetrobots .tile.walldown {border-bottom: 2px solid #000;}
+.ricochetrobots .tile.wallright {border-right: 2px solid #000;}
+.ricochetrobots .tile.center {background-color: #000;}
+.ricochetrobots .target {position: absolute; color: #fff; margin: 1px; width: 18px; height: 18px; border-radius: 2px; padding: 1px; box-sizing: border-box;}    
+.ricochetrobots .robot {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 8px; z-index: 2; transition: top 1s, left 1s; cursor: pointer; color: #fff; font-size: 12px; font-family: sans; padding:1px; box-shadow: 0 0 1px #000; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;}
+.ricochetrobots .robot.active {box-shadow: inset 0 0 5px #000;}
+.ricochetrobots .ghost {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 10px; opacity: 0.5; cursor: pointer; z-index:2;}
+.ricochetrobots .arrow {position: absolute;}
+.ricochetrobots .arrow.head {width: 10px; height: 10px; box-sizing: border-box; margin: 5px; background-color: transparent;}
+.ricochetrobots .arrow.head.up {border-bottom: 15px solid; margin-top: 5px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
+.ricochetrobots .arrow.head.left {border-right: 15px solid; margin-left: 5px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
+.ricochetrobots .arrow.head.down {border-top: 15px solid; margin-top: 0px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
+.ricochetrobots .arrow.head.right {border-left:15px solid; margin-left: 0px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
