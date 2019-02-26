@@ -4,6 +4,7 @@ A multiplayer board game implementation
 * [Game](https://www.boardgameprices.com/prices/ricochetrobot) can be bought here
 * [Rules](https://www.zmangames.com/en/products/ricochet-robots/) can be downloaded here
 * [Singleplayer](http://www.robotreboot.com/challenge) with highscores can be played here
+* [Play](http://wollmilchmedien.de/ricochetrobots/) this (unfinished) implementation here
 
 ## Setup
 
