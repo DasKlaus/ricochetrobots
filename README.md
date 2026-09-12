@@ -9,8 +9,10 @@ A multiplayer board game implementation
 ## Setup
 
 * put everything on a server
-* create database from dump
-* enter mysql credentials in php file
+* create the game database from `schema.sql` and the shared identity database from `identity.sql`
+* enter the mysql credentials in `config.php` and in `identity.php`
+* put a `.user.ini` above the document root switching `display_errors` off and `log_errors` on, with
+  `error_log` pointing outside the document root — `config.php` runs too late to catch a parse error
 
 ## Play
 
