@@ -4,6 +4,7 @@
 
 var alphabet = "23456789abcdefghjklmnpqrstuvwxyz"; // keep in sync with the seed generation in index.php
 var scale = 20; // px per tile
+var movetime = 700; // ms per robot move, as the robots' transition in style.css
 var deadline = 60; // seconds a round stays open after its first solution, as DEADLINE in receiver.php
 var colors = ["red", "blue", "yellow", "green", "black"];
 var directions = ["up", "left", "down", "right"];
@@ -223,7 +224,7 @@ function targetReached() {
     else post({action: "solve", round: round, moves: JSON.stringify(moves)});
   }
   // the robots return once the last move has animated
-  setTimeout(function() { stepAllBack(); if (!transition) game.running = true; }, 1000);
+  setTimeout(function() { stepAllBack(); if (!transition) game.running = true; }, movetime);
 }
 
 function countdown(seconds) {
@@ -289,8 +290,8 @@ function apply(moves) {
 }
 
 function play(moves, then) {
-  moves.forEach(function(move, i) { setTimeout(function() { apply([move]); }, 1000 * (i + 1)); });
-  setTimeout(then, 1000 * (moves.length + 2));
+  moves.forEach(function(move, i) { setTimeout(function() { apply([move]); }, movetime * (i + 1)); });
+  setTimeout(then, movetime * (moves.length + 1));
 }
 
 function moveRobot(dir) {

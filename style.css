@@ -3,15 +3,18 @@
 @font-face {font-family: "Source Sans"; src: url(fonts/SourceSansPro-Bold.otf); font-weight: bold;}
 * {font-family: "Source Sans";}
 
+:root {color-scheme: light dark; --bg: #fff; --fg: #000; --panel: #eee; --ink: #000; --grid: #aaa; --faint: #ddd; --button: #888; --warn: #e12; --blue: #364d9c;}
+@media (prefers-color-scheme: dark) {:root {--bg: #1e1f23; --fg: #c3c5c9; --panel: #2a2c31; --ink: #878a91; --grid: #3b3e44; --faint: #3b3e44; --button: #50535a; --warn: #d9605f; --blue: #5470c8;}}
+body {background-color: var(--bg); color: var(--fg);}
 h3 {font-weight: 600;}
-.warning {color: #e12;}
+.warning {color: var(--warn);}
 .hp {position: absolute; left: -9999px;}
 .red {background-color: #d2365d;}
-.blue {background-color: #364d9c;}
+.blue {background-color: var(--blue);}
 .yellow {background-color: #e6b13b;}
 .green {background-color: #6fca34;}
 .black {background-color: #888;}
-.display {position: fixed; z-index: 4; left: 50%; translate: -50%; display: grid; align-content: end; width: 282px; height: 46px; padding: 10px; border: 4px solid #000; background-color: #eee; font-size: 18px; text-align: center; transition: top 1s ease-in;}
+.display {position: fixed; z-index: 4; left: 50%; translate: -50%; display: grid; align-content: end; width: 282px; height: 46px; padding: 10px; border: 4px solid var(--ink); background-color: var(--panel); font-size: 18px; text-align: center; transition: top 1s ease-in;}
 
 /* header, content and player bar share one column that shrinks with the window; the board keeps its fixed geometry */
 
@@ -20,30 +23,31 @@ h3 {font-weight: 600;}
 .header h1 {margin: 0; line-height: 58px;}
 .gameid {position: absolute; bottom: 0; width: 100%; line-height: 1;}
 .gameid b {display: block; font-size: 28px; font-weight: 600; margin-bottom: -.15em;} /* baseline on the boxes' bottom edge */
-.points, .time {position: absolute; bottom: 0; visibility: hidden; width: 110px; height: 50px; border: 4px solid #000; background-color: #eee; font-size: 35px; font-weight: bold; line-height: 50px;}
+.points, .time {position: absolute; bottom: 0; visibility: hidden; width: 110px; height: 50px; border: 4px solid var(--ink); background-color: var(--panel); font-size: 35px; font-weight: bold; line-height: 50px;}
 .points {right: 0;}
-.time {left: 0; color: #ddd; transition: color 5s;}
-.time.g30 {color: #000;}
+.time {left: 0; color: var(--faint); transition: color 5s;}
+.time.g30 {color: var(--fg);}
 .time.g10 {color: #c82;}
-.time.l10 {color: #e12;}
-input, button {margin: 0 10px 10px 0; padding: 10px 20px; border: 2px solid #000; border-radius: 25px; font-size: 20px; font-weight: bold;}
-button {background-color: #888; color: #fff; cursor: pointer;}
-.footer {margin: 12px 0; padding: 10px; border-top: 4px solid #000; text-align: center;}
-.footer a {margin: 0 10px; color: #000; text-decoration: none;}
+.time.l10 {color: var(--warn);}
+input, button {margin: 0 10px 10px 0; padding: 10px 20px; border: 2px solid var(--ink); border-radius: 25px; font-size: 20px; font-weight: bold;}
+input {background-color: var(--bg); color: var(--fg);}
+button {background-color: var(--button); color: #fff; cursor: pointer;}
+.footer {margin: 12px 0; padding: 10px; border-top: 4px solid var(--ink); text-align: center;}
+.footer a {margin: 0 10px; color: var(--fg); text-decoration: none;}
 
 /* board */
 
 .wrap {display: flex; flex-wrap: wrap; justify-content: center; container-type: inline-size;}
-.map {position: relative; width: 320px; height: 320px; margin: 0 8px; border: 2px solid #000; background-color: #eee;}
-.solutionwrapper {position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: 324px; height: 324px; margin: 0 8px; border: 4px solid #000; background-color: #eee;}
+.map {position: relative; width: 320px; height: 320px; margin: 0 8px; border: 2px solid var(--ink); background-color: var(--panel);}
+.solutionwrapper {position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: 324px; height: 324px; margin: 0 8px; border: 4px solid var(--ink); background-color: var(--panel);}
 /* wrapped under the board, which then draws the dividing line */
 @container (width < 680px) {.solutionwrapper {border-top: none; height: 162px;}}
 .btn {position: absolute; bottom: 5px; right: 40px; font-size: 2em; font-weight: bold; cursor: pointer;}
 .btn:last-child {right: 10px;}
 .best, .current {flex: none; min-height: 18px; padding: 10px;}
 .current {padding-right: 50px;}
-.all {flex: auto; overflow: auto; border-block: 2px solid #000;}
-.singlesolution {padding: 10px; border-bottom: 1px dotted #000;}
+.all {flex: auto; overflow: auto; border-block: 2px solid var(--ink);}
+.singlesolution {padding: 10px; border-bottom: 1px dotted var(--ink);}
 .singlesolution:last-child {border: none;}
 .length {float: right;}
 .move, .unknown {display: inline-block; width: 14px; height: 14px; margin: 0 1px; vertical-align: middle;}
@@ -53,18 +57,18 @@ button {background-color: #888; color: #fff; cursor: pointer;}
 .text h3 {margin-top: 0; text-align: center;}
 .text table {width: 100%;}
 .text th, .text td + td {text-align: right;}
-.players {box-sizing: border-box; min-height: 58px; padding: 10px; border: 4px solid #000; background-color: #eee; line-height: 30px; text-align: center;}
+.players {box-sizing: border-box; min-height: 58px; padding: 10px; border: 4px solid var(--ink); background-color: var(--panel); line-height: 30px; text-align: center;}
 .player {margin: 0 8px; white-space: nowrap;}
 .me {font-weight: 600;}
-.tile {position: absolute; box-sizing: border-box; width: 20px; height: 20px; border: 1px solid #aaa;}
-.tile.wallup {border-top: 2px solid #000;}
-.tile.wallleft {border-left: 2px solid #000;}
-.tile.walldown {border-bottom: 2px solid #000;}
-.tile.wallright {border-right: 2px solid #000;}
-.tile.center {background-color: #000;}
+.tile {position: absolute; box-sizing: border-box; width: 20px; height: 20px; border: 1px solid var(--grid);}
+.tile.wallup {border-top: 2px solid var(--ink);}
+.tile.wallleft {border-left: 2px solid var(--ink);}
+.tile.walldown {border-bottom: 2px solid var(--ink);}
+.tile.wallright {border-right: 2px solid var(--ink);}
+.tile.center {background-color: var(--ink);}
 .target {position: absolute; width: 18px; height: 18px; margin: 1px; border-radius: 2px; color: #fff; font-size: 14px; line-height: 18px; text-align: center;}
 .robot, .ghost {position: absolute; z-index: 2; width: 16px; height: 16px; margin: 2px; border-radius: 50%; cursor: pointer;}
-.robot {box-shadow: 0 0 1px #000; color: #fff; font-size: 12px; font-weight: bold; line-height: 16px; text-align: center; transition: top 1s, left 1s; -webkit-user-select: none; user-select: none;}
+.robot {box-shadow: 0 0 1px #000; color: #fff; font-size: 12px; font-weight: bold; line-height: 16px; text-align: center; transition: top .7s, left .7s; -webkit-user-select: none; user-select: none;} /* the duration is movetime in logic.js */
 .robot.active {box-shadow: inset 0 0 5px #000;}
 .ghost {opacity: .5;}
 .arrow {position: absolute;}
