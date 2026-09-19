@@ -1,6 +1,5 @@
 User-agent: *
 Disallow: /*?
 Disallow: /?go=impressum
-Disallow: /?go=neu
 Disallow: /?go=user
 Disallow: /receiver.php

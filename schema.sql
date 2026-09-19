@@ -8,6 +8,7 @@ CREATE TABLE `game` (
 	`seed` varchar(8) NOT NULL,
 	`round` int(10) NOT NULL DEFAULT 0,
 	`version` int(10) NOT NULL DEFAULT 0,
+	`created_by` bigint(20) NOT NULL,
 	`created_at` datetime NOT NULL,
 	PRIMARY KEY (`seed`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
