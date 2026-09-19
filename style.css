@@ -59,6 +59,7 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .text th, .text td + td {text-align: right;}
 .players {box-sizing: border-box; min-height: 58px; padding: 10px; border: 4px solid var(--ink); background-color: var(--panel); line-height: 30px; text-align: center;}
 .player {margin: 0 8px; white-space: nowrap;}
+.home {display: block; margin: 12px auto;} /* replaces the player bar once the game is over */
 .me {font-weight: 600;}
 .tile {position: absolute; box-sizing: border-box; width: 20px; height: 20px; border: 1px solid var(--grid);}
 .tile.wallup {border-top: 2px solid var(--ink);}

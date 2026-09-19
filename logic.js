@@ -110,8 +110,8 @@ function init() {
 
 function render() {
   if (state.round > round) { endRound(); return; }
-  writeplayers();
   if (round >= map.targets.length) return;
+  writeplayers();
   var leader = state.solutions[0] || null;
   if (leader && leader.user_id != selfid && (!best || leader.length < best.length))
     display((leader.name || "Gast")+(best ? " war besser!" : " hat eine Lösung gefunden"));
@@ -193,6 +193,11 @@ function endGame() {
   });
   box.appendChild(table);
   wrapper.appendChild(box);
+  var home = document.createElement("button");
+  home.className = "home";
+  home.textContent = "Zur Startseite";
+  home.addEventListener("click", function() { location.href = "."; });
+  document.querySelector(".players").replaceWith(home);
   replay(0);
 }
 
@@ -448,6 +453,7 @@ Robot.prototype.move = moveRobot;
 Robot.prototype.show = showMoves;
 Robot.prototype.activate = setActive;
 
+// random(), shuffle(), createMap() and originals have a PHP twin in preview.php, which draws the starting board for link previews
 function random(seed) { // mulberry32 over the room code, so every client derives the same board
   var a = 0;
   for (var i = 0; i < seed.length; i++) a = a * 32 + alphabet.indexOf(seed[i]);

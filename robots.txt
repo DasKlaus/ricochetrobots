@@ -1,4 +1,6 @@
 User-agent: *
+Allow: /?game=
+Allow: /preview.php
 Disallow: /*?
 Disallow: /?go=impressum
 Disallow: /?go=user

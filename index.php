@@ -48,14 +48,23 @@ if (($do == 'create' or $do == 'join') and $_SESSION['user_id'])
 }
 
 $go = $_GET['go'] ?? ($seed ? 'game' : '');
+$preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HOST'].rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\')
+	.'/preview.php'.($go == 'game' ? '?game='.urlencode($seed) : '');
 ?>
 <!DOCTYPE html>
 <html lang="de">
 	<head>
 		<title>Ricochet Robots</title>
-		<meta name="robots" content="index,nofollow">
+		<meta name="description" content="F&uuml;hre die Roboter zum Ziel. Nach dem Brettspiel von Alex Randolph">
+		<meta name="robots" content="<?php echo $go == 'game' ? 'noindex,nofollow' : 'index,nofollow'; ?>">
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta property="og:type" content="website">
+		<meta property="og:title" content="Ricochet Robots">
+		<meta property="og:description" content="F&uuml;hre die Roboter zum Ziel. Nach dem Brettspiel von Alex Randolph">
+		<meta property="og:image" content="<?php echo htmlspecialchars($preview, ENT_QUOTES, 'UTF-8'); ?>">
+		<meta property="og:image:width" content="1200">
+		<meta property="og:image:height" content="628">
 		<link rel="stylesheet" href="style.css">
 	</head>
 	<body>
