@@ -56,18 +56,18 @@ $go = $_GET['go'] ?? ($seed ? 'game' : '');
 		<meta name="robots" content="index,nofollow">
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<link href="style.css" type="text/css" rel="stylesheet" media="screen">
+		<link rel="stylesheet" href="style.css">
 	</head>
-	<body class="ricochetrobots">
+	<body>
 	<div class="header">
-		<div class="time">&nbsp;</div>
+		<div class="time"></div>
 		<?php
 		if ($go == 'game')
 			echo '<div class="gameid">Spiel-ID:<b>'.htmlspecialchars($seed, ENT_QUOTES, 'UTF-8').'</b></div>';
 		else
 			echo '<h1>Ricochet Robots</h1>';
 		?>
-		<div class="points">&nbsp;</div>
+		<div class="points"></div>
 	</div>
 	<?php
 	if ($go == 'game')
@@ -90,13 +90,13 @@ $go = $_GET['go'] ?? ($seed ? 'game' : '');
 		{
 			if ($warning) echo '<p class="warning">'.$warning.'</p>';
 			echo '<h2>Spiel beitreten</h2>
-				<form method="get" class="identity">
+				<form method="get">
 					<input type="text" name="game" value="">
 					<button type="submit">Beitreten</button>
 				</form>
 				<h2>Neues Spiel</h2>';
 			if ($_SESSION['user_id'])
-				echo '<form method="post" class="identity">
+				echo '<form method="post">
 						<input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
 						<button type="submit" name="do" value="create">Spiel starten</button>
 					</form>';

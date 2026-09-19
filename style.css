@@ -3,82 +3,73 @@
 @font-face {font-family: "Source Sans"; src: url(fonts/SourceSansPro-Bold.otf); font-weight: bold;}
 * {font-family: "Source Sans";}
 
-.ricochetrobots {position: relative;}
-.ricochetrobots h3 {font-weight: 600;}
-.ricochetrobots .warning {color: #e12;}
-.ricochetrobots .hp {position: absolute; left: -9999px;}
-.ricochetrobots .blue {background-color: #364D9C; color: #364D9C; border-color: #364D9C;}
-.ricochetrobots .red {background-color: #D2365D; color: #D2365D; border-color: #D2365D;}
-.ricochetrobots .yellow {background-color: #E6B13B; color: #E6B13B; border-color: #E6B13B;}
-.ricochetrobots .green {background-color: #6FCA34; color: #6FCA34; border-color: #6FCA34;}
-.ricochetrobots .black {background-color: #888; color: #888; border-color: #888;}
-.ricochetrobots .display {position: absolute; z-index: 4; text-align: center; background: #eee; border: 4px solid #000; top: -16px; left: 50%; transform: translate(-50%,0); padding: 10px; width: 282px; font-size: 18px; height: 46px; transition: top 1s ease-in;}
-.ricochetrobots .display div {position: relative; height: 100%; width: 100%;}
-.ricochetrobots .display div span {display: block; position: absolute; width: 100%; bottom: 0;}
+h3 {font-weight: 600;}
+.warning {color: #e12;}
+.hp {position: absolute; left: -9999px;}
+.red {background-color: #d2365d;}
+.blue {background-color: #364d9c;}
+.yellow {background-color: #e6b13b;}
+.green {background-color: #6fca34;}
+.black {background-color: #888;}
+.display {position: fixed; z-index: 4; left: 50%; translate: -50%; display: grid; align-content: end; width: 282px; height: 46px; padding: 10px; border: 4px solid #000; background-color: #eee; font-size: 18px; text-align: center; transition: top 1s ease-in;}
 
-/* header and content take the bars' width and shrink with the window; the board keeps its fixed geometry */
+/* header, content and player bar share one column that shrinks with the window; the board keeps its fixed geometry */
 
-.ricochetrobots .header {max-width: 570px; text-align: center; position: relative; margin: 12px auto; height: 58px;}
-.ricochetrobots .header h1 {margin: 0; line-height: 58px;}
-.ricochetrobots .gameid {position: absolute; bottom: 0; width: 100%; line-height: 1;}
-.ricochetrobots .gameid b {display: block; font-size: 28px; font-weight: 600; margin-bottom: -.15em;} /* baseline on the boxes' bottom edge */
-.ricochetrobots .points, .ricochetrobots .time {position: absolute; bottom: 0; visibility: hidden; padding: 5px; border: 4px solid #000; background-color: #eee; height: 40px; font-size: 35px; font-weight: bold; line-height: 40px; width: 100px; text-align: center; transition: color 5s;}
-.ricochetrobots .points {right: 0;}
-.ricochetrobots .time {color: #ddd; left: 0;}
-.ricochetrobots .time.g30 {color: #000;}
-.ricochetrobots .time.g10 {color: #c82;}
-.ricochetrobots .time.l10 {color: #e12;}
-.ricochetrobots .content {max-width: 570px; margin: 0 auto;}
-.ricochetrobots .content input, .ricochetrobots .content button {margin: 0 10px 10px 0; padding: 10px 20px; border: 2px solid #000; border-radius: 25px; background-color: #888; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer;}
-.ricochetrobots .content input {background-color: #fff; color: #000; cursor: text;}
-.ricochetrobots .footer {margin: 12px auto; padding: 10px; border-top: 4px solid #000; text-align: center;}
-.ricochetrobots .footer a {margin: 0 10px; color: #000; text-decoration: none;}
+.header, .content, .players {max-width: 570px; margin: 12px auto;}
+.header {position: relative; height: 58px; text-align: center;}
+.header h1 {margin: 0; line-height: 58px;}
+.gameid {position: absolute; bottom: 0; width: 100%; line-height: 1;}
+.gameid b {display: block; font-size: 28px; font-weight: 600; margin-bottom: -.15em;} /* baseline on the boxes' bottom edge */
+.points, .time {position: absolute; bottom: 0; visibility: hidden; width: 110px; height: 50px; border: 4px solid #000; background-color: #eee; font-size: 35px; font-weight: bold; line-height: 50px;}
+.points {right: 0;}
+.time {left: 0; color: #ddd; transition: color 5s;}
+.time.g30 {color: #000;}
+.time.g10 {color: #c82;}
+.time.l10 {color: #e12;}
+input, button {margin: 0 10px 10px 0; padding: 10px 20px; border: 2px solid #000; border-radius: 25px; font-size: 20px; font-weight: bold;}
+button {background-color: #888; color: #fff; cursor: pointer;}
+.footer {margin: 12px 0; padding: 10px; border-top: 4px solid #000; text-align: center;}
+.footer a {margin: 0 10px; color: #000; text-decoration: none;}
 
 /* board */
 
-.ricochetrobots .wrap {display: flex; flex-wrap: wrap; justify-content: center; container-type: inline-size;}
-.ricochetrobots .solutionwrapper h3 {text-align: center; margin-top: 0;}
-.ricochetrobots .solutionwrapper .text {padding: 20px; max-height: 100%; box-sizing: border-box; overflow: auto;}
-.ricochetrobots .solutionwrapper table {width: 100%;}
-.ricochetrobots .solutionwrapper th, .ricochetrobots .solutionwrapper td {text-align: right;}
-.ricochetrobots .solutionwrapper td:first-child {text-align: left;}
-.ricochetrobots .solutionwrapper .me {font-weight: 600;}
-.ricochetrobots .map {position: relative; height: 320px; width: 320px; border: 2px solid #000; background-color: #eee; margin: 0 8px;}
-.ricochetrobots .solutionwrapper {position: relative; height: 324px; width: 324px; border: 4px solid #000; background-color: #eee; margin: 0 8px; box-sizing: border-box; text-align: left;}
+.wrap {display: flex; flex-wrap: wrap; justify-content: center; container-type: inline-size;}
+.map {position: relative; width: 320px; height: 320px; margin: 0 8px; border: 2px solid #000; background-color: #eee;}
+.solutionwrapper {position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: 324px; height: 324px; margin: 0 8px; border: 4px solid #000; background-color: #eee;}
 /* wrapped under the board, which then draws the dividing line */
-@container (width < 680px) {.ricochetrobots .solutionwrapper {border-top: none; height: 162px;}}
-.ricochetrobots .solutionwrapper .btn {position: absolute; bottom: 5px; right: 40px; font-size: 2em; font-weight: bold; cursor: pointer;}
-.ricochetrobots .solutionwrapper .btn:last-child {right: 10px;}
-.ricochetrobots .solution {display: flex; flex-direction: column; width: 100%; height: 100%;}
-.ricochetrobots .solution .best .length {float: right;}
-.ricochetrobots .unknown {display: inline-block; width: 14px; margin: 0 1px; font-weight: bold; line-height: 14px; text-align: center; vertical-align: middle;}
-.ricochetrobots .solution .best {padding: 10px; border-bottom: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
-.ricochetrobots .solution .all {overflow: auto; flex: 1 1 auto;}
-.ricochetrobots .solution .all .singlesolution {padding: 10px; border-bottom: 1px dotted #000;}
-.ricochetrobots .solution .all .singlesolution:last-child {border: none;}
-.ricochetrobots .solution .current {padding: 10px 50px 10px 10px; border-top: 2px solid #000; min-height: 18px; flex: 0 0 auto;}
-/* one up arrow, filled in the robot's colour and turned per direction */
-.ricochetrobots .move {display: inline-block; width: 14px; height: 14px; margin: 0 1px; vertical-align: middle;
-	clip-path: polygon(50% 0, 100% 50%, 65% 50%, 65% 100%, 35% 100%, 35% 50%, 0 50%);}
-.ricochetrobots .move.left {transform: rotate(-90deg);}
-.ricochetrobots .move.down {transform: rotate(180deg);}
-.ricochetrobots .move.right {transform: rotate(90deg);}
-.ricochetrobots .players {min-height: 58px; max-width: 570px; border: 4px solid #000; background-color: #eee; margin: 12px auto; box-sizing: border-box; text-align: center; padding: 10px; line-height: 30px;}
-.ricochetrobots .players span {margin: 0 8px; white-space: nowrap;}
-.ricochetrobots .players .me {font-weight: 600;}
-.ricochetrobots .tile {width: 20px; height: 20px; background-color: #eee; box-sizing: border-box; border: 1px solid #aaa; position: absolute;}
-.ricochetrobots .tile.wallup {border-top: 2px solid #000;}
-.ricochetrobots .tile.wallleft {border-left: 2px solid #000;}
-.ricochetrobots .tile.walldown {border-bottom: 2px solid #000;}
-.ricochetrobots .tile.wallright {border-right: 2px solid #000;}
-.ricochetrobots .tile.center {background-color: #000;}
-.ricochetrobots .target {position: absolute; color: #fff; margin: 1px; width: 18px; height: 18px; border-radius: 2px; box-sizing: border-box; font-size: 14px; line-height: 18px; text-align: center;}
-.ricochetrobots .robot {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 8px; z-index: 2; transition: top 1s, left 1s; cursor: pointer; color: #fff; font-size: 12px; font-weight: bold; padding:1px; box-shadow: 0 0 1px #000; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; text-align: center;}
-.ricochetrobots .robot.active {box-shadow: inset 0 0 5px #000;}
-.ricochetrobots .ghost {box-sizing: border-box; margin: 2px; width: 16px; height: 16px; position: absolute; border-radius: 10px; opacity: 0.5; cursor: pointer; z-index:2;}
-.ricochetrobots .arrow {position: absolute;}
-.ricochetrobots .arrow.head {width: 10px; height: 10px; box-sizing: border-box; margin: 5px; background-color: transparent;}
-.ricochetrobots .arrow.head.up {border-bottom: 15px solid; margin-top: 5px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
-.ricochetrobots .arrow.head.left {border-right: 15px solid; margin-left: 5px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
-.ricochetrobots .arrow.head.down {border-top: 15px solid; margin-top: 0px; height: 15px; border-left: 5px solid transparent; border-right: 5px solid transparent;}
-.ricochetrobots .arrow.head.right {border-left:15px solid; margin-left: 0px; width: 15px; border-top: 5px solid transparent; border-bottom: 5px solid transparent;}
+@container (width < 680px) {.solutionwrapper {border-top: none; height: 162px;}}
+.btn {position: absolute; bottom: 5px; right: 40px; font-size: 2em; font-weight: bold; cursor: pointer;}
+.btn:last-child {right: 10px;}
+.best, .current {flex: none; min-height: 18px; padding: 10px;}
+.current {padding-right: 50px;}
+.all {flex: auto; overflow: auto; border-block: 2px solid #000;}
+.singlesolution {padding: 10px; border-bottom: 1px dotted #000;}
+.singlesolution:last-child {border: none;}
+.length {float: right;}
+.move, .unknown {display: inline-block; width: 14px; height: 14px; margin: 0 1px; vertical-align: middle;}
+.unknown {font-weight: bold; line-height: 14px; text-align: center;}
+.move {clip-path: polygon(50% 0, 100% 50%, 65% 50%, 65% 100%, 35% 100%, 35% 50%, 0 50%);}
+.text {padding: 20px; overflow: auto;}
+.text h3 {margin-top: 0; text-align: center;}
+.text table {width: 100%;}
+.text th, .text td + td {text-align: right;}
+.players {box-sizing: border-box; min-height: 58px; padding: 10px; border: 4px solid #000; background-color: #eee; line-height: 30px; text-align: center;}
+.player {margin: 0 8px; white-space: nowrap;}
+.me {font-weight: 600;}
+.tile {position: absolute; box-sizing: border-box; width: 20px; height: 20px; border: 1px solid #aaa;}
+.tile.wallup {border-top: 2px solid #000;}
+.tile.wallleft {border-left: 2px solid #000;}
+.tile.walldown {border-bottom: 2px solid #000;}
+.tile.wallright {border-right: 2px solid #000;}
+.tile.center {background-color: #000;}
+.target {position: absolute; width: 18px; height: 18px; margin: 1px; border-radius: 2px; color: #fff; font-size: 14px; line-height: 18px; text-align: center;}
+.robot, .ghost {position: absolute; z-index: 2; width: 16px; height: 16px; margin: 2px; border-radius: 50%; cursor: pointer;}
+.robot {box-shadow: 0 0 1px #000; color: #fff; font-size: 12px; font-weight: bold; line-height: 16px; text-align: center; transition: top 1s, left 1s; -webkit-user-select: none; user-select: none;}
+.robot.active {box-shadow: inset 0 0 5px #000;}
+.ghost {opacity: .5;}
+.arrow {position: absolute;}
+.arrow.head {width: 20px; height: 20px; clip-path: polygon(50% 25%, 75% 100%, 25% 100%);}
+/* moves and arrow heads point up in the robot's colour, turned per direction */
+.left {rotate: -90deg;}
+.down {rotate: 180deg;}
+.right {rotate: 90deg;}

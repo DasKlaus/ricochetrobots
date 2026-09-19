@@ -61,9 +61,9 @@ function solo() {
   if (!state.solutions.length) {
     state.timeleft = null;
     clearInterval(game.timer);
-    document.querySelector(".ricochetrobots .time").textContent = "";
+    document.querySelector(".time").textContent = "";
   }
-  document.querySelector(".ricochetrobots .players").textContent = "Netzwerkfehler oder keine Netzwerkverbindung!";
+  document.querySelector(".players").textContent = "Netzwerkfehler oder keine Netzwerkverbindung!";
   display("Netzwerkproblem, von nun an Singleplayer.");
   if (round === undefined) init();
 }
@@ -99,7 +99,7 @@ function receive(next) {
 
 function init() {
   createMap();
-  document.querySelectorAll(".ricochetrobots .time, .ricochetrobots .points").forEach(function(box) { box.style.visibility = "visible"; });
+  document.querySelectorAll(".time, .points").forEach(function(box) { box.style.visibility = "visible"; });
   state.history.forEach(function(h) { apply(h.moves); });
   drawRobots();
   window.addEventListener("keydown", handleKey);
@@ -115,7 +115,7 @@ function render() {
   if (leader && leader.user_id != selfid && (!best || leader.length < best.length))
     display((leader.name || "Gast")+(best ? " war besser!" : " hat eine Lösung gefunden"));
   best = leader;
-  var bestbox = document.querySelector(".ricochetrobots .solution .best");
+  var bestbox = document.querySelector(".best");
   bestbox.textContent = "";
   if (leader) {
     if (leader.user_id == selfid) writeMoves(bestbox, leader.moves);
@@ -131,7 +131,7 @@ function render() {
     bestbox.appendChild(length);
   }
   var mine = state.solutions.filter(function(s) { return s.user_id == selfid; });
-  var all = document.querySelector(".ricochetrobots .solution .all");
+  var all = document.querySelector(".all");
   all.textContent = "";
   mine.sort(function(a, b) { return b.id - a.id; }).forEach(function(s) {
     var row = document.createElement("div");
@@ -147,11 +147,11 @@ function startRound() {
   best = null;
   turn = {solution: [], robot: null};
   clearInterval(game.timer);
-  var time = document.querySelector(".ricochetrobots .time");
+  var time = document.querySelector(".time");
   time.className = "time";
   time.textContent = " ";
   if (round >= map.targets.length) { endGame(); return; }
-  document.querySelector(".ricochetrobots .points").textContent = (round + 1)+"/"+map.targets.length;
+  document.querySelector(".points").textContent = (round + 1)+"/"+map.targets.length;
   map.targets[round].activate();
   game.running = isplayer;
 }
@@ -176,7 +176,7 @@ function endRound() {
 
 function endGame() {
   game.running = false;
-  var wrapper = document.querySelector(".ricochetrobots .solutionwrapper");
+  var wrapper = document.querySelector(".solutionwrapper");
   wrapper.textContent = "";
   var box = document.createElement("div");
   box.className = "text";
@@ -201,7 +201,7 @@ function replay(r) {
     map.robots.forEach(function(robot) { robot.tile.robot = null; robot.tile = robot.start; });
     map.robots.forEach(function(robot) { moveTo(robot, robot.start); });
   }
-  document.querySelector(".ricochetrobots .points").textContent = (r + 1)+"/"+state.history.length;
+  document.querySelector(".points").textContent = (r + 1)+"/"+state.history.length;
   map.targets[r].activate();
   play(state.history[r].moves, function() { replay((r + 1) % state.history.length); });
 }
@@ -234,7 +234,7 @@ function countdown(seconds) {
 }
 
 function count() {
-  var time = document.querySelector(".ricochetrobots .time");
+  var time = document.querySelector(".time");
   time.textContent = ("0"+Math.floor(game.timeleft/60)).slice(-2)+":"+("0"+game.timeleft%60).slice(-2);
   time.className = "time "+(game.timeleft > 30 ? "g30" : game.timeleft > 10 ? "g10" : "l10");
   if (game.timeleft < 1) {
@@ -247,7 +247,7 @@ function count() {
 
 function writeplayers() {
   if (offline) return;
-  var bar = document.querySelector(".ricochetrobots .players");
+  var bar = document.querySelector(".players");
   bar.textContent = "";
   state.players.forEach(function(p) {
     var span = document.createElement("span");
@@ -260,15 +260,11 @@ function writeplayers() {
 function display(text) {
   var box = document.createElement("div");
   box.className = "display";
-  box.style = "top: -88px;";
-  var span = document.createElement("span");
-  span.textContent = text;
-  var div = document.createElement("div");
-  div.appendChild(span);
-  box.appendChild(div);
-  document.querySelector(".ricochetrobots").appendChild(box);
-  setTimeout(function() { box.style = "top: -16px; transition: top .5s;"; }, 200);
-  setTimeout(function() { box.style = "top: -88px;"; }, 2000);
+  box.style = "top: -76px;";
+  box.textContent = text;
+  document.body.appendChild(box);
+  setTimeout(function() { box.style = "top: -4px; transition: top .5s;"; }, 200);
+  setTimeout(function() { box.style = "top: -76px;"; }, 2000);
   setTimeout(function() { box.remove(); }, 5000);
 }
 
@@ -302,7 +298,7 @@ function moveRobot(dir) {
   var endpoint = this.tile.getTile(dir);
   if (endpoint == this.tile) return;
   turn.solution.push({color: this.color, dir: dir, robot: this, start: this.tile});
-  document.querySelector(".ricochetrobots .solution .current").appendChild(moveSpan(this.color, dir));
+  document.querySelector(".current").appendChild(moveSpan(this.color, dir));
   moveTo(this, endpoint);
   var target = map.targets[round];
   if (endpoint.target == target && (this.color == target.color || target.color == 4)) targetReached();
@@ -314,7 +310,7 @@ function stepBack() {
   if (!turn || !turn.solution.length) return;
   var step = turn.solution.pop();
   moveTo(step.robot, step.start);
-  document.querySelector(".ricochetrobots .solution .current").lastChild.remove();
+  document.querySelector(".current").lastChild.remove();
   if (turn.robot) { exorciseAll(); turn.robot.show(); }
 }
 
@@ -357,7 +353,7 @@ function showMoves() {
   var robot = this.robot || this;
   if (turn.robot == robot && this.constructor != Robot) return;
   exorcise();
-  var mapspace = document.querySelector(".ricochetrobots .map");
+  var mapspace = document.querySelector(".map");
   for (var dir = 0; dir < 4; dir++) {
     var endpoint = robot.tile.getTile(dir);
     if (endpoint == robot.tile) continue;
@@ -383,13 +379,13 @@ function showMoves() {
 }
 
 function exorcise() { // remove the ghosts of all but the active robot
-  document.querySelectorAll(".ricochetrobots .ghost, .ricochetrobots .arrow").forEach(function(ghost) {
+  document.querySelectorAll(".ghost, .arrow").forEach(function(ghost) {
     if (!turn.robot || !ghost.classList.contains(colors[turn.robot.color])) ghost.remove();
   });
 }
 
 function exorciseAll() {
-  document.querySelectorAll(".ricochetrobots .ghost, .ricochetrobots .arrow").forEach(function(ghost) { ghost.remove(); });
+  document.querySelectorAll(".ghost, .arrow").forEach(function(ghost) { ghost.remove(); });
 }
 
 function handleKey(e) {
@@ -432,7 +428,7 @@ function Target(x, y, color, dir) {
 }
 
 Target.prototype.activate = function() {
-  var div = document.querySelector(".ricochetrobots .target");
+  var div = document.querySelector(".target");
   div.className = "target "+colors[this.color];
   div.style = "top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
 };
@@ -528,7 +524,7 @@ function createMap() {
     });
   });
   shuffle(map.targets, draw);
-  var mapspace = document.querySelector(".ricochetrobots .map");
+  var mapspace = document.querySelector(".map");
   map.nested.forEach(function(col) { col.forEach(function(tile) {
     var div = document.createElement("div");
     div.className = "tile"+tile.walls.map(function(wall, dir) { return wall ? " wall"+directions[dir] : ""; }).join("")
@@ -550,7 +546,7 @@ function createMap() {
 }
 
 function drawRobots() {
-  var mapspace = document.querySelector(".ricochetrobots .map");
+  var mapspace = document.querySelector(".map");
   map.robots.forEach(function(robot, i) {
     robot.div = document.createElement("div");
     robot.div.className = "robot "+colors[robot.color];

@@ -12,9 +12,9 @@ $isplayer = $mysql->execute_query("select 1 from player where seed = ? and user_
 <div class="wrap">
 	<div class="map"></div>
 	<div class="solutionwrapper">
-		<div class="solution"><div class="best"></div><div class="all"></div><div class="current"></div></div>
-		<div class="btn back" title="letzten Zug zur&uuml;cknehmen" onclick="stepBack();">&lsaquo;</div>
-		<div class="btn allback" title="alle Z&uuml;ge zur&uuml;cknehmen" onclick="stepAllBack();">&laquo;</div>
+		<div class="best"></div><div class="all"></div><div class="current"></div>
+		<div class="btn" title="letzten Zug zur&uuml;cknehmen" onclick="stepBack();">&lsaquo;</div>
+		<div class="btn" title="alle Z&uuml;ge zur&uuml;cknehmen" onclick="stepAllBack();">&laquo;</div>
 	</div>
 </div>
 <div class="players"></div>
@@ -33,7 +33,7 @@ if (!$_SESSION['user_id'] and $currentgame['round'] < TARGETS)
 	identityForm();
 }
 elseif (!$isplayer and $currentgame['round'] < TARGETS)
-	echo '<form method="post" class="identity">
+	echo '<form method="post">
 			<button type="submit" name="do" value="join">Mitspielen</button>
 		</form>';
 ?>
