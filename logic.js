@@ -56,6 +56,13 @@ function repoll() {
 function solo() {
   offline = true;
   clearTimeout(polltimer);
+  // alone, only the player's own solutions count, and without one the round has no deadline
+  state.solutions = state.solutions.filter(function(s) { return s.user_id == selfid; });
+  if (!state.solutions.length) {
+    state.timeleft = null;
+    clearInterval(game.timer);
+    document.querySelector(".ricochetrobots .time").textContent = "";
+  }
   document.querySelector(".ricochetrobots .players").textContent = "Netzwerkfehler oder keine Netzwerkverbindung!";
   display("Netzwerkproblem, von nun an Singleplayer.");
   if (round === undefined) init();
@@ -73,8 +80,9 @@ function localstate(moves) {
     state.solutions = [];
     state.timeleft = null;
   }
+  var me = state.players.find(function(p) { return p.user_id == selfid; }) || {solutions: 0};
   state.players = [{user_id: selfid, name: "", targets: state.history.length,
-    points: state.history.reduce(function(sum, h) { return sum + h.moves.length; }, 0)}];
+    points: state.history.reduce(function(sum, h) { return sum + h.moves.length; }, 0), solutions: me.solutions + (moves ? 1 : 0)}];
   receive(state);
 }
 
@@ -107,19 +115,22 @@ function render() {
   if (leader && leader.user_id != selfid && (!best || leader.length < best.length))
     display((leader.name || "Gast")+(best ? " war besser!" : " hat eine Lösung gefunden"));
   best = leader;
-  var turnbox = document.querySelector(".ricochetrobots .points .turn");
-  turnbox.textContent = leader ? leader.length : " ";
-  turnbox.classList.toggle("stranger", !!leader && leader.user_id != selfid);
-  var mine = state.solutions.filter(function(s) { return s.user_id == selfid; });
   var bestbox = document.querySelector(".ricochetrobots .solution .best");
   bestbox.textContent = "";
-  if (mine.length) {
-    writeMoves(bestbox, mine[0].moves);
-    var points = document.createElement("span");
-    points.className = "ownpoints";
-    points.textContent = mine[0].length;
-    bestbox.appendChild(points);
+  if (leader) {
+    if (leader.user_id == selfid) writeMoves(bestbox, leader.moves);
+    else for (var i = 0; i < leader.length; i++) {
+      var mark = document.createElement("span");
+      mark.className = "unknown";
+      mark.textContent = "?";
+      bestbox.appendChild(mark);
+    }
+    var length = document.createElement("span");
+    length.className = "length";
+    length.textContent = leader.length;
+    bestbox.appendChild(length);
   }
+  var mine = state.solutions.filter(function(s) { return s.user_id == selfid; });
   var all = document.querySelector(".ricochetrobots .solution .all");
   all.textContent = "";
   mine.sort(function(a, b) { return b.id - a.id; }).forEach(function(s) {
@@ -139,8 +150,8 @@ function startRound() {
   var time = document.querySelector(".ricochetrobots .time");
   time.className = "time";
   time.textContent = " ";
-  document.querySelector(".ricochetrobots .round").textContent = Math.min(round + 1, map.targets.length);
   if (round >= map.targets.length) { endGame(); return; }
+  document.querySelector(".ricochetrobots .points").textContent = (round + 1)+"/"+map.targets.length;
   map.targets[round].activate();
   game.running = isplayer;
 }
@@ -155,11 +166,15 @@ function endRound() {
   for (var r = round; r < state.round - 1; r++) apply(state.history[r].moves);
   var winner = state.history[state.round - 1];
   display(winner.user_id == selfid ? "Punkt für dich!" : "Punkt für "+(winner.name || "Gast"));
-  play(winner.moves, function() { transition = false; startRound(); render(); });
+  play(winner.moves, function() {
+    transition = false;
+    // the finished game comes from the server; replace() rather than reload() as the page may answer a form
+    if (state.round >= map.targets.length && !offline) location.replace(location.href);
+    else { startRound(); render(); }
+  });
 }
 
 function endGame() {
-  document.querySelector(".ricochetrobots .target").remove();
   game.running = false;
   var wrapper = document.querySelector(".ricochetrobots .solutionwrapper");
   wrapper.textContent = "";
@@ -168,20 +183,27 @@ function endGame() {
   var head = document.createElement("h3");
   head.textContent = "Spiel beendet";
   box.appendChild(head);
-  var ranking = state.players.slice().sort(function(a, b) { return b.targets - a.targets || a.points - b.points; });
-  [{name: "", targets: "Ziele", points: "Züge"}].concat(ranking).forEach(function(p) {
-    var row = document.createElement("div");
-    row.className = p.user_id == selfid ? "score me" : "score";
-    row.textContent = p.name || (p.user_id ? "Gast" : "");
-    [p.targets, p.points].forEach(function(n) {
-      var pts = document.createElement("span");
-      pts.className = "pts";
-      pts.textContent = n;
-      row.appendChild(pts);
-    });
-    box.appendChild(row);
+  var table = document.createElement("table");
+  table.innerHTML = "<tr><th></th><th>Ziele</th><th>Züge</th><th>Lösungen</th></tr>";
+  state.players.slice().sort(function(a, b) { return b.targets - a.targets || a.points - b.points; }).forEach(function(p) {
+    var row = table.insertRow();
+    if (p.user_id == selfid) row.className = "me";
+    [p.name || "Gast", p.targets, p.points, p.solutions].forEach(function(value) { row.insertCell().textContent = value; });
   });
+  box.appendChild(table);
   wrapper.appendChild(box);
+  replay(0);
+}
+
+// the finished game on a loop, each round's winning solution played as at its end
+function replay(r) {
+  if (r == 0) { // every robot leaves its tile before any returns, as one may stand on another's start
+    map.robots.forEach(function(robot) { robot.tile.robot = null; robot.tile = robot.start; });
+    map.robots.forEach(function(robot) { moveTo(robot, robot.start); });
+  }
+  document.querySelector(".ricochetrobots .points").textContent = (r + 1)+"/"+state.history.length;
+  map.targets[r].activate();
+  play(state.history[r].moves, function() { replay((r + 1) % state.history.length); });
 }
 
 function targetReached() {
@@ -224,9 +246,6 @@ function count() {
 }
 
 function writeplayers() {
-  var me = state.players.find(function(p) { return p.user_id == selfid; }) || {targets: 0, points: 0};
-  document.querySelector(".ricochetrobots .targets").textContent = me.targets;
-  document.querySelector(".ricochetrobots .fullpoints").textContent = me.points;
   if (offline) return;
   var bar = document.querySelector(".ricochetrobots .players");
   bar.textContent = "";
@@ -234,7 +253,7 @@ function writeplayers() {
     var span = document.createElement("span");
     span.className = p.user_id == selfid ? "player me" : "player";
     span.textContent = (p.name || "Gast")+": "+p.targets+(p.targets == 1 ? " Ziel, " : " Ziele, ")+p.points+(p.points == 1 ? " Zug" : " Züge");
-    bar.appendChild(span);
+    bar.append(span, " ");
   });
 }
 
@@ -248,7 +267,7 @@ function display(text) {
   div.appendChild(span);
   box.appendChild(div);
   document.querySelector(".ricochetrobots").appendChild(box);
-  setTimeout(function() { box.style = "top: -4px; transition: top .5s;"; }, 200);
+  setTimeout(function() { box.style = "top: -16px; transition: top .5s;"; }, 200);
   setTimeout(function() { box.style = "top: -88px;"; }, 2000);
   setTimeout(function() { box.remove(); }, 5000);
 }
@@ -424,6 +443,7 @@ function Robot(x, y, color) {
   this.color = color;
   this.tile = map.nested[x][y];
   this.tile.robot = this;
+  this.start = this.tile;
   this.div = null;
 }
 

@@ -6,8 +6,8 @@ Nach 17 Zielen ist das Spiel zu Ende.</p>
 Wer ein Ziel gewinnt, bekommt die Z&uuml;ge seiner L&ouml;sung, alle anderen die der l&auml;ngsten gefundenen L&ouml;sung plus zehn.</p>
 <p>Du kannst Mitspieler einladen, indem du die Spiel-URL oder den Spielcode mit ihnen teilst.
 Bricht die Verbindung zum Server ab, l&auml;uft das Spiel allein weiter.</p>
-<p>Oben links l&auml;uft der Countdown, oben rechts stehen Runde, gewonnene Ziele und Z&uuml;ge.
-Links liegt das Spielfeld, rechts stehen deine L&ouml;sungen: unten die aktuelle, oben die beste, dazwischen alle bisherigen.</p>
+<p>Oben links l&auml;uft der Countdown, oben rechts steht die Runde.
+Links liegt das Spielfeld, rechts stehen deine L&ouml;sungen: unten die aktuelle, dar&uuml;ber alle bisherigen und ganz oben die beste der Runde, als Fragezeichen, wenn sie nicht deine ist.</p>
 <h3>Mit der Maus</h3>
 <ul>
 	<li>&Uuml;ber einen Roboter fahren zeigt seine m&ouml;glichen Z&uuml;ge.</li>

@@ -72,7 +72,7 @@ function gamestate($mysql, $seed)
 	$players = [];
 	foreach ($mysql->execute_query("select user_id, display_name as name from player where seed = ? order by joined_at", [$seed])->fetch_all(MYSQLI_ASSOC) as $row)
 	{
-		$players[$row['user_id']] = $row + ['targets' => 0, 'points' => 0];
+		$players[$row['user_id']] = $row + ['targets' => 0, 'points' => 0, 'solutions' => 0];
 	}
 	$rounds = [];
 	foreach ($mysql->execute_query("select s.id, s.round, s.user_id, p.display_name as name, s.moves, s.length, timestampdiff(second, s.created_at, now()) as age
@@ -80,6 +80,7 @@ function gamestate($mysql, $seed)
 			where s.seed = ? order by s.round, s.length, s.id", [$seed])->fetch_all(MYSQLI_ASSOC) as $row)
 	{
 		$rounds[$row['round']][] = $row;
+		$players[$row['user_id']]['solutions']++;
 	}
 	$history = [];
 	$solutions = [];
@@ -102,7 +103,9 @@ function gamestate($mysql, $seed)
 			$timeleft = DEADLINE - max(array_column($list, 'age'));
 			foreach ($list as $row)
 			{
-				$solutions[] = ['id' => $row['id'], 'user_id' => $row['user_id'], 'name' => $row['name'], 'moves' => json_decode($row['moves']), 'length' => $row['length']];
+				// an open round's moves go to their author only, everyone else gets the length
+				$solutions[] = ['id' => $row['id'], 'user_id' => $row['user_id'], 'name' => $row['name'], 'length' => $row['length']]
+					+ ($row['user_id'] == $_SESSION['user_id'] ? ['moves' => json_decode($row['moves'])] : []);
 			}
 		}
 	}

@@ -27,7 +27,7 @@ $isplayer = $mysql->execute_query("select 1 from player where seed = ? and user_
 <div class="content">
 <?php
 identityMessage();
-if (!$_SESSION['user_id'])
+if (!$_SESSION['user_id'] and $currentgame['round'] < TARGETS)
 {
 	echo '<p>Vergib einen Namen, um mitzuspielen, oder lass das Feld frei, um anonym zu spielen. Wenn du einen Authentifizierungs-Code hast, kannst du dich mit diesem anmelden.</p>';
 	identityForm();

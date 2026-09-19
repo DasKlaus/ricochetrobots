@@ -61,11 +61,13 @@ $go = $_GET['go'] ?? ($seed ? 'game' : '');
 	<body class="ricochetrobots">
 	<div class="header">
 		<div class="time">&nbsp;</div>
-		<h1>Ricochet Robots</h1>
-		<div class="points">
-			<span class="turn">&nbsp;</span>
-			<div>Runde: <span class="round">1</span><br>Ziele: <span class="targets">0</span><br>Z&uuml;ge: <span class="fullpoints">0</span></div>
-		</div>
+		<?php
+		if ($go == 'game')
+			echo '<div class="gameid">Spiel-ID:<b>'.htmlspecialchars($seed, ENT_QUOTES, 'UTF-8').'</b></div>';
+		else
+			echo '<h1>Ricochet Robots</h1>';
+		?>
+		<div class="points">&nbsp;</div>
 	</div>
 	<?php
 	if ($go == 'game')

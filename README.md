@@ -18,7 +18,7 @@ A multiplayer board game implementation
 
 Pick a name on the profile page, then start a game or join one by its code. The code is also the URL, so sharing the link invites others.
 Once someone finds a solution, the round ends 60 seconds later: the shortest solution wins the target, the earlier one among equals, and the robots stay where it left them. After 17 targets the game is over. If the connection to the server drops, the game continues alone.
-In a game, your score is displayed at the upper right, the countdown after a solution is found at the upper left corner. The left square shows the map, the right one your solutions - the one in progress at the bottom, the best one at the top, and all solutions found so far in the middle.
+In a game, the round is displayed at the upper right, the countdown after a solution is found at the upper left corner. The left square shows the map, the right one your solutions - the one in progress at the bottom, all solutions found so far in the middle, and the round's best one at the top, as question marks if it isn't yours.
 
 ### with mouse
 
