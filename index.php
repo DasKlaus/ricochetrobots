@@ -2,6 +2,7 @@
 header('Content-Type: text/html; charset=UTF-8');
 require_once("config.php");
 require_once("identity.php");
+require_once("lang.php"); // after identity.php, which is where a language change lands
 
 const TARGETS = 17; // 16 coloured targets and the vortex
 
@@ -20,11 +21,11 @@ if (($do == 'create' or $do == 'join') and $_SESSION['user_id'])
 		$recent = $mysql->execute_query("select sum(created_at > now() - interval 1 minute), count(*) from game
 			where created_by = ? and created_at > now() - interval 1 hour", [$_SESSION['user_id']])->fetch_row();
 		if (($_POST['website'] ?? '') != '')
-			$warning = "Das Spiel konnte nicht erstellt werden.";
+			$warning = t('creategamefailed');
 		elseif ($recent[0] > 0)
-			$warning = "Du hast gerade eben ein Spiel gestartet. Warte eine Minute, bevor du das n&auml;chste startest.";
+			$warning = t('ratelimitminute');
 		elseif ($recent[1] >= 10)
-			$warning = "Du hast in der letzten Stunde zehn Spiele gestartet. Versuch es sp&auml;ter noch einmal.";
+			$warning = t('ratelimithour');
 		else
 		{
 			do
@@ -52,16 +53,17 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 	.'/preview.php'.($go == 'game' ? '?game='.urlencode($seed) : '');
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?php echo $language; ?>">
 	<head>
 		<title>Ricochet Robots</title>
-		<meta name="description" content="F&uuml;hre die Roboter zum Ziel. Nach dem Brettspiel von Alex Randolph">
+		<meta name="description" content="<?php echo t('metadescription'); ?>">
 		<meta name="robots" content="<?php echo $go == 'game' ? 'noindex,nofollow' : 'index,nofollow'; ?>">
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta property="og:type" content="website">
+		<meta property="og:locale" content="<?php echo $language == 'en' ? 'en_GB' : 'de_DE'; ?>">
 		<meta property="og:title" content="Ricochet Robots">
-		<meta property="og:description" content="F&uuml;hre die Roboter zum Ziel. Nach dem Brettspiel von Alex Randolph">
+		<meta property="og:description" content="<?php echo t('metadescription'); ?>">
 		<meta property="og:image" content="<?php echo htmlspecialchars($preview, ENT_QUOTES, 'UTF-8'); ?>">
 		<meta property="og:image:width" content="1200">
 		<meta property="og:image:height" content="628">
@@ -72,7 +74,7 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 		<div class="time"></div>
 		<?php
 		if ($go == 'game')
-			echo '<div class="gameid">Spiel-ID:<b>'.htmlspecialchars($seed, ENT_QUOTES, 'UTF-8').'</b></div>';
+			echo '<div class="gameid">'.t('gameid').':<b>'.htmlspecialchars($seed, ENT_QUOTES, 'UTF-8').'</b></div>';
 		else
 			echo '<h1>Ricochet Robots</h1>';
 		?>
@@ -84,45 +86,46 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 	else
 	{
 		echo '<div class="content">';
-		identityMessage();
+		identityMessage($language);
 		if ($go == 'impressum')
 		{
 			require_once("legal.php");
-			legalNotice();
+			legalNotice($language);
 		}
 		elseif ($go == 'user')
 		{
-			echo '<h2>Profil</h2>';
-			identityForm();
+			echo '<h2>'.t('profile').'</h2>';
+			identityLanguageForm($language, ['de' => 'Deutsch', 'en' => 'English']);
+			identityForm($language);
 		}
 		else
 		{
 			if ($warning) echo '<p class="warning">'.$warning.'</p>';
-			echo '<h2>Spiel beitreten</h2>
+			echo '<h2>'.t('joingame').'</h2>
 				<form method="get">
 					<input type="text" name="game" value="">
-					<button type="submit">Beitreten</button>
+					<button type="submit">'.t('join').'</button>
 				</form>
-				<h2>Neues Spiel</h2>';
+				<h2>'.t('newgame').'</h2>';
 			if ($_SESSION['user_id'])
 				echo '<form method="post">
 						<input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
-						<button type="submit" name="do" value="create">Spiel starten</button>
+						<button type="submit" name="do" value="create">'.t('startgame').'</button>
 					</form>';
 			else
 			{
-				echo '<p>Vergib einen Namen, um ein Spiel zu starten, oder lass das Feld frei, um anonym zu spielen. Wenn du einen Authentifizierungs-Code hast, kannst du dich mit diesem anmelden.</p>';
-				identityForm();
+				echo t('guestcreate');
+				identityForm($language);
 			}
-			include_once("instructions.php");
+			echo '<h2>'.t('instructions').'</h2>'.t('instructionstext');
 		}
 		echo '</div>';
 	}
 	?>
 	<div class="footer">
-		<a href="?go=user">Profil<?php if ($_SESSION['user_id']) echo ': '.htmlspecialchars($_SESSION['display_name'] ?: "Gast", ENT_QUOTES, 'UTF-8'); ?></a>
-		<a href=".">Anleitung</a>
-		<a href="?go=impressum">Impressum</a>
+		<a href="?go=user"><?php echo t('profile'); if ($_SESSION['user_id']) echo ': '.htmlspecialchars($_SESSION['display_name'] ?: t('guest'), ENT_QUOTES, 'UTF-8'); ?></a>
+		<a href="."><?php echo t('instructions'); ?></a>
+		<a href="?go=impressum"><?php echo t('legal'); ?></a>
 	</div>
 	</body>
 </html>

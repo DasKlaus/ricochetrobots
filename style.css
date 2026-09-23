@@ -35,6 +35,13 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .footer {margin: 12px 0; padding: 10px; border-top: 4px solid var(--ink); text-align: center;}
 .footer a {margin: 0 10px; color: var(--fg); text-decoration: none;}
 
+/* language: the radios blown up to the height of the other inputs — same border, same padding,
+   and a box the size of the 20px line they are built around — so the set sits among them rather
+   than looking like a browser default. The radio stays a radio, so label and keyboard still work. */
+.identity.language label {display: inline-flex; align-items: center; gap: 10px; margin-right: 20px; font-size: 20px; font-weight: bold; cursor: pointer;}
+.identity.language input {appearance: none; box-sizing: content-box; width: 25px; height: 25px; margin: 0; padding: 10px; border-radius: 50%;}
+.identity.language input:checked {background-color: var(--button);}
+
 /* board */
 
 .wrap {display: flex; flex-wrap: wrap; justify-content: center; container-type: inline-size;}

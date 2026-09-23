@@ -21,13 +21,27 @@ var pollwait = 5000;
 var polltimer;
 
 /*
+ * text: txt is written into the page by board.php, in the language it resolved for this visitor
+ */
+
+// one pass, so a value carrying a placeholder of its own is not read back as one
+function fmt(string) {
+  var args = arguments;
+  return string.replace(/%(\d)/g, function(match, n) { return args[n]; });
+}
+
+function plural(key, count) {
+  return txt[key][count == 1 ? 0 : 1];
+}
+
+/*
  * network
  */
 
 function get() {
   fetch("receiver.php?game="+encodeURIComponent(seed)+"&version="+state.version).then(function(response) {
     if (response.status == 304) { pollwait = Math.min(pollwait + 5000, 30000); return; }
-    if (!response.ok) { display("Serverfehler"); return; }
+    if (!response.ok) { display(txt.servererror); return; }
     response.json().then(receive);
   }, solo);
 }
@@ -35,7 +49,7 @@ function get() {
 function post(data) {
   data.game = seed;
   fetch("receiver.php", {method: "POST", body: new URLSearchParams(data)}).then(function(response) {
-    if (!response.ok) { display("Serverfehler"); return; }
+    if (!response.ok) { display(txt.servererror); return; }
     response.json().then(receive);
   }, solo);
 }
@@ -64,8 +78,8 @@ function solo() {
     clearInterval(game.timer);
     document.querySelector(".time").textContent = "";
   }
-  document.querySelector(".players").textContent = "Netzwerkfehler oder keine Netzwerkverbindung!";
-  display("Netzwerkproblem, von nun an Singleplayer.");
+  document.querySelector(".players").textContent = txt.networkerror;
+  display(txt.singleplayer);
   if (round === undefined) init();
 }
 
@@ -114,7 +128,7 @@ function render() {
   writeplayers();
   var leader = state.solutions[0] || null;
   if (leader && leader.user_id != selfid && (!best || leader.length < best.length))
-    display((leader.name || "Gast")+(best ? " war besser!" : " hat eine Lösung gefunden"));
+    display(fmt(best ? txt.better : txt.foundsolution, leader.name || txt.guest));
   best = leader;
   var bestbox = document.querySelector(".best");
   bestbox.textContent = "";
@@ -166,7 +180,7 @@ function endRound() {
   // rounds missed while away are applied at once, only the last one is played
   for (var r = round; r < state.round - 1; r++) apply(state.history[r].moves);
   var winner = state.history[state.round - 1];
-  display(winner.user_id == selfid ? "Punkt für dich!" : "Punkt für "+(winner.name || "Gast"));
+  display(winner.user_id == selfid ? txt.pointself : fmt(txt.pointother, winner.name || txt.guest));
   play(winner.moves, function() {
     transition = false;
     // the finished game comes from the server; replace() rather than reload() as the page may answer a form
@@ -182,20 +196,20 @@ function endGame() {
   var box = document.createElement("div");
   box.className = "text";
   var head = document.createElement("h3");
-  head.textContent = "Spiel beendet";
+  head.textContent = txt.gameover;
   box.appendChild(head);
   var table = document.createElement("table");
-  table.innerHTML = "<tr><th></th><th>Ziele</th><th>Züge</th><th>Lösungen</th></tr>";
+  table.innerHTML = "<tr><th></th><th>"+txt.headtargets+"</th><th>"+txt.headmoves+"</th><th>"+txt.headsolutions+"</th></tr>";
   state.players.slice().sort(function(a, b) { return b.targets - a.targets || a.points - b.points; }).forEach(function(p) {
     var row = table.insertRow();
     if (p.user_id == selfid) row.className = "me";
-    [p.name || "Gast", p.targets, p.points, p.solutions].forEach(function(value) { row.insertCell().textContent = value; });
+    [p.name || txt.guest, p.targets, p.points, p.solutions].forEach(function(value) { row.insertCell().textContent = value; });
   });
   box.appendChild(table);
   wrapper.appendChild(box);
   var home = document.createElement("button");
   home.className = "home";
-  home.textContent = "Zur Startseite";
+  home.textContent = txt.home;
   home.addEventListener("click", function() { location.href = "."; });
   document.querySelector(".players").replaceWith(home);
   replay(0);
@@ -220,11 +234,11 @@ function targetReached() {
   var known = mine.some(function(s) {
     return s.length == moves.length && s.moves.every(function(m, i) { return m.color == moves[i].color && m.dir == moves[i].dir; });
   });
-  if (known) display("Diese Lösung hattest du schon!");
+  if (known) display(txt.knownsolution);
   else {
-    display(!mine.length ? (best ? "Geschafft!" : "Erster!")
-      : moves.length >= mine[0].length ? "Ziel erreicht!"
-      : moves.length < best.length ? "Rekord!" : "Schon besser!");
+    display(!mine.length ? (best ? txt.done : txt.first)
+      : moves.length >= mine[0].length ? txt.reached
+      : moves.length < best.length ? txt.record : txt.improved);
     if (offline) localstate(moves);
     else post({action: "solve", round: round, moves: JSON.stringify(moves)});
   }
@@ -258,7 +272,7 @@ function writeplayers() {
   state.players.forEach(function(p) {
     var span = document.createElement("span");
     span.className = p.user_id == selfid ? "player me" : "player";
-    span.textContent = (p.name || "Gast")+": "+p.targets+(p.targets == 1 ? " Ziel, " : " Ziele, ")+p.points+(p.points == 1 ? " Zug" : " Züge");
+    span.textContent = (p.name || txt.guest)+": "+p.targets+" "+plural("target", p.targets)+", "+p.points+" "+plural("move", p.points);
     bar.append(span, " ");
   });
 }
