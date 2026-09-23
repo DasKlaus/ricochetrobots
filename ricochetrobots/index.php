@@ -56,6 +56,7 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 <html lang="<?php echo $language; ?>">
 	<head>
 		<title>Ricochet Robots</title>
+		<link rel="icon" href="favicon.svg">
 		<meta name="description" content="<?php echo t('metadescription'); ?>">
 		<meta name="robots" content="<?php echo $go == 'game' ? 'noindex,nofollow' : 'index,nofollow'; ?>">
 		<meta charset="UTF-8">
