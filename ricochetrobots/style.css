@@ -59,7 +59,11 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .length {float: right;}
 .move, .unknown {display: inline-block; width: 14px; height: 14px; margin: 0 1px; vertical-align: middle;}
 .unknown {font-weight: bold; line-height: 14px; text-align: center;}
-.move {clip-path: polygon(50% 0, 100% 50%, 65% 50%, 65% 100%, 35% 100%, 35% 50%, 0 50%);}
+/* one polygon per direction: rotating these left seams at some display scalings */
+.move.up {clip-path: polygon(50% 0, 100% 50%, 65% 50%, 65% 100%, 35% 100%, 35% 50%, 0 50%);}
+.move.left {clip-path: polygon(0 50%, 50% 0, 50% 35%, 100% 35%, 100% 65%, 50% 65%, 50% 100%);}
+.move.down {clip-path: polygon(50% 100%, 0 50%, 35% 50%, 35% 0, 65% 0, 65% 50%, 100% 50%);}
+.move.right {clip-path: polygon(100% 50%, 50% 100%, 50% 65%, 0 65%, 0 35%, 50% 35%, 50% 0);}
 .text {padding: 20px; overflow: auto;}
 .text h3 {margin-top: 0; text-align: center;}
 .text table {width: 100%;}
@@ -81,7 +85,7 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .ghost {opacity: .5;}
 .arrow {position: absolute;}
 .arrow.head {width: 20px; height: 20px; clip-path: polygon(50% 25%, 75% 100%, 25% 100%);}
-/* moves and arrow heads point up in the robot's colour, turned per direction */
-.left {rotate: -90deg;}
-.down {rotate: 180deg;}
-.right {rotate: 90deg;}
+/* arrow heads point up in the robot's colour, turned per direction */
+.arrow.head.left {rotate: -90deg;}
+.arrow.head.down {rotate: 180deg;}
+.arrow.head.right {rotate: 90deg;}
