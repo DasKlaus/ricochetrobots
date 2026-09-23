@@ -9,7 +9,7 @@ set_exception_handler(function ($e) {
 	echo json_encode(["error" => "Serverfehler"]);
 });
 require_once("config.php");
-require_once("identity.php");
+require_once("../identity.php");
 
 const TARGETS = 17; // 16 coloured targets and the vortex
 const DEADLINE = 60; // seconds a round stays open after its first solution, as deadline in logic.js

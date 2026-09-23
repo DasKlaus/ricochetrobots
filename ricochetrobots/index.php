@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
 require_once("config.php");
-require_once("identity.php");
+require_once("../identity.php");
 require_once("lang.php"); // after identity.php, which is where a language change lands
 
 const TARGETS = 17; // 16 coloured targets and the vortex
@@ -89,7 +89,7 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 		identityMessage($language);
 		if ($go == 'impressum')
 		{
-			require_once("legal.php");
+			require_once("../legal.php");
 			legalNotice($language);
 		}
 		elseif ($go == 'user')

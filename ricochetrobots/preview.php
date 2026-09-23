@@ -106,7 +106,7 @@ for ($i = 0; $i < 10; $i++)
 	$star[] = (12 + 20 * $y - ($i % 2 ? 2.3 : 6) * cos($i * M_PI / 5)) * $u;
 }
 imagefilledpolygon($board, $star, 0xffffff);
-$font = __DIR__.'/fonts/SourceSansPro-Bold.otf';
+$font = __DIR__.'/../fonts/SourceSansPro-Bold.otf';
 foreach ($robots as $i => [$x, $y])
 {
 	imagefilledellipse($board, (12 + 20 * $x) * $u, (12 + 20 * $y) * $u, 16 * $u, 16 * $u, $colors[$i]);
