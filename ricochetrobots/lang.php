@@ -35,6 +35,9 @@ $ui = [
 	'play' => 'Spielen',
 	'copy' => 'Kopieren',
 	'understood' => 'Verstanden',
+	'showbest' => 'Eigene beste Lösung anzeigen',
+	'showlatest' => 'Zur aktuellen Lösung zurückkehren',
+	'totalmoves' => 'Züge insgesamt',
 
 	'nogame' => 'Dieses Spiel gibt es nicht.',
 	'creategamefailed' => 'Das Spiel konnte nicht erstellt werden.',
@@ -88,6 +91,9 @@ $ui = [
 	'play' => 'Play',
 	'copy' => 'Copy',
 	'understood' => 'Understood',
+	'showbest' => 'Show personal best',
+	'showlatest' => 'Back to current solution',
+	'totalmoves' => 'Total moves',
 
 	'nogame' => 'This game does not exist.',
 	'creategamefailed' => 'The game could not be created.',
@@ -131,9 +137,10 @@ $text = [
 	'dailytext' => '<p>Jeden Tag ein neues Puzzle mit fünf Zielen.</p>',
 
 	'instructionstext' => '<p>Nach dem Brettspiel von Alex Randolph.</p>
-		<p>Ziel ist, mit dem richtigen Roboter das markierte Ziel zu erreichen, in so wenig Zügen wie möglich.
+		<p>Ziel ist, das markierte Ziel <span class="target red">★</span> mit dem Roboter der gleichen Farbe <span class="robot red">1</span> zu erreichen, in so wenig Zügen wie möglich.
+		Das bunte Ziel <span class="target black">★</span> darf jeder Roboter erreichen.
 		Roboter können nicht anhalten: sie bewegen sich in die entsprechende Richtung, bis sie an eine Wand oder einen anderen Roboter stoßen.
-		Das graue Ziel darf von jedem Roboter erreicht werden.</p>
+		Auch die anderen Roboter dürfen gezogen werden, um als Hindernis zu dienen.</p>
 		<h3>Spiel mit der Maus</h3>
 		<ul>
 			<li>&Uuml;ber einen Roboter fahren zeigt seine m&ouml;glichen Z&uuml;ge.</li>
@@ -162,9 +169,10 @@ $text = [
 	'dailytext' => '<p>A new board with five targets every day.</p>',
 
 	'instructionstext' => '<p>After the board game by Alex Randolph.</p>
-		<p>The aim is to reach the marked target with the right robot, in as few moves as possible.
+		<p>The aim is to reach the marked target <span class="target red">★</span> with the robot of the same colour <span class="robot red">1</span>, in as few moves as possible.
+		The multicoloured target <span class="target black">★</span> may be reached by any robot.
 		Robots cannot stop: they travel in the given direction until they hit a wall or another robot.
-		The grey target may be reached by any robot.</p>
+		The other robots may be moved as well, to act as blockers.</p>
 		<h3>Playing with the mouse</h3>
 		<ul>
 			<li>Hovering over a robot shows its possible moves.</li>

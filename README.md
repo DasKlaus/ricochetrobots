@@ -40,7 +40,7 @@ In a game, the round is displayed at the upper right, the countdown after a solu
 
 A new board with five targets every day at `daily`, the same for everyone: one target of each colour, the grey one last.
 A target's first solution counts, and the robots stay where it left them. Two more buttons in the solution window undo the last target or all of them, also after the fifth, which is how a finished run is retried. The clock runs from first opening the puzzle; visitors without a name see the rules first, and their clock starts when they close them.
-A finished run is saved under a name. Guests are asked for one at the end, and without it the run lasts only for the session. A later run replaces the saved one if it needs fewer moves, its time still counted from the first opening.
+A finished run is saved under a name. Guests are asked for one at the end, and without it the run lasts only for the session. A later run replaces the saved one if it needs fewer moves, its time still counted from the first opening. The newest run is the one shown; where it needed more moves than the saved one, a button switches between the two.
 The result is a plain-text share line with a copy button: moves per target, the total, the time and, from two days in a row on, the streak.
 
 ## Notes

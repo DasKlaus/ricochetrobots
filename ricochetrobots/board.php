@@ -2,11 +2,13 @@
 if ($go == 'daily')
 {
 	$held = $_SESSION['ricochetdaily'] ?? ['day' => ''];
+	$latest = $_SESSION['ricochetlatest'] ?? ['day' => ''];
 	$run = $_SESSION['user_id']
-		? $mysql->execute_query("select moves as history, seconds, streak, timestampdiff(second, opened_at, now()) as elapsed from daily where day = ? and user_id = ?",
+		? $mysql->execute_query("select moves as history, length, seconds, streak, timestampdiff(second, opened_at, now()) as elapsed from daily where day = ? and user_id = ?",
 			[date('Y-m-d'), $_SESSION['user_id']])->fetch_assoc()
-		: ($held['day'] == date('Y-m-d') ? ['history' => $held['history'], 'seconds' => $held['seconds'], 'elapsed' => time() - $held['opened']] : null);
-	$daily = ['number' => $number, 'day' => date('Y-m-d'), 'run' => $run];
+		: ($held['day'] == date('Y-m-d') ? ['history' => $held['history'], 'length' => $held['length'], 'seconds' => $held['seconds'], 'elapsed' => time() - $held['opened']] : null);
+	// the newest run is shown rather than the saved best, which may have needed fewer moves
+	$daily = ['number' => $number, 'day' => date('Y-m-d'), 'run' => $run, 'latest' => $run && $latest['day'] == date('Y-m-d') ? $latest : null];
 	$isplayer = true;
 	$rules = !$run && !$_SESSION['user_id']; // a visitor without a name may come from a shared result, so the rules come first
 }
@@ -52,6 +54,7 @@ if ($daily)
 	echo '<div class="result" hidden>
 			<div class="share"></div>
 			<button type="button" onclick="getSelection().selectAllChildren(this.previousElementSibling); navigator.clipboard.writeText(this.previousElementSibling.textContent);">'.t('copy').'</button>
+			<button type="button" class="toggle" onclick="toggle();" hidden></button>
 		</div>';
 else
 	echo '<div class="players"></div>';

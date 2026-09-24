@@ -18,6 +18,7 @@ var state = {version: -1, round: 0, history: [], timeleft: null, solutions: [], 
 var transition = false; // a round end is being played back
 var playtimer; // the next move being played back
 var opened; // when the daily was first opened, on the client's clock
+var shown; // the daily's finished run on display: the newest, or the saved best
 var offline = false;
 var pollwait = 5000;
 var polltimer;
@@ -128,7 +129,16 @@ function init() {
 }
 
 function render() {
-  if (daily) { writeSolutions(state.history); return; }
+  if (daily) {
+    writeSolutions(state.history);
+    var totalbox = document.querySelector(".best");
+    totalbox.textContent = txt.totalmoves;
+    var sum = document.createElement("span");
+    sum.className = "length";
+    sum.textContent = total();
+    totalbox.appendChild(sum);
+    return;
+  }
   if (state.round > round) { endRound(); return; }
   if (round >= map.targets.length) return;
   writeplayers();
@@ -205,6 +215,9 @@ function endGame() {
   game.running = false;
   if (daily) {
     document.querySelector(".share").textContent = share();
+    var button = document.querySelector(".toggle");
+    button.hidden = !daily.latest || daily.latest.length <= daily.run.length;
+    button.textContent = shown == daily.run ? txt.showlatest : txt.showbest;
     document.querySelector(".result").hidden = false;
     replay(0);
     return;
@@ -333,9 +346,18 @@ function back(all) {
   render();
 }
 
+// switches the finished view between the newest run and the saved best, where the newest needed more moves
+function toggle() {
+  shown = shown == daily.run ? daily.latest : daily.run;
+  state.history = JSON.parse(shown.history);
+  clearTimeout(playtimer);
+  startRound();
+  render();
+}
+
 // the clock runs from first opening, a finished run shows its own time
 function tick() {
-  document.querySelector(".time").textContent = clock(round < map.targets.length ? Math.floor((Date.now() - opened) / 1000) : daily.run.seconds);
+  document.querySelector(".time").textContent = clock(round < map.targets.length ? Math.floor((Date.now() - opened) / 1000) : shown.seconds);
 }
 
 // m:ss, past an hour h:mm:ss
@@ -347,11 +369,14 @@ function clock(seconds) {
 // plain text with one sign per target; the address carries no result
 function share() {
   var signs = state.history.map(function(h) { var n = h.moves.length; return n > 10 ? "🟥" : n == 10 ? "🔟" : n+"\uFE0F\u20E3"; });
-  var total = state.history.reduce(function(sum, h) { return sum + h.moves.length; }, 0);
-  var seconds = daily.run.seconds;
+  var seconds = shown.seconds;
   var text = new URL("daily", location.href).href+" #"+daily.number+"\n"
-    +fmt(txt.sharemoves, signs.join(""), total, fmt(seconds < 3600 ? txt.shareminutes : txt.sharehours, clock(seconds)));
+    +fmt(txt.sharemoves, signs.join(""), total(), fmt(seconds < 3600 ? txt.shareminutes : txt.sharehours, clock(seconds)));
   return daily.run.streak >= 2 ? text+"\n"+fmt(txt.sharestreak, daily.run.streak) : text;
+}
+
+function total() {
+  return state.history.reduce(function(sum, h) { return sum + h.moves.length; }, 0);
 }
 
 function display(text) {
@@ -533,7 +558,7 @@ function Target(x, y, color, dir) {
 }
 
 Target.prototype.activate = function() {
-  var div = document.querySelector(".target");
+  var div = document.querySelector(".map .target");
   div.className = "target "+colors[this.color];
   div.style = "top: "+scale*this.y+"px; left: "+scale*this.x+"px;";
 };
@@ -689,7 +714,8 @@ var originals = [ // contains targets and walls (position from upper left corner
 ];
 
 if (daily) {
-  state.history = daily.run ? JSON.parse(daily.run.history) : [];
+  shown = daily.latest || daily.run;
+  state.history = shown ? JSON.parse(shown.history) : [];
   state.round = state.history.length;
   if (!document.querySelector(".wrap").hidden) start();
 } else {

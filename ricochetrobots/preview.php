@@ -98,7 +98,13 @@ foreach ($walls as $x => $column) foreach ($column as $y => $sides)
 	foreach (array_filter($sides) as $dir => $side) { $rect(0x000000, ...[[$left, $top, 20, 2], [$left, $top, 2, 20], [$left, $top + 18, 20, 2], [$left + 18, $top, 2, 20]][$dir]); }
 }
 [$x, $y, $color] = $target;
-$rect($colors[$color], 3 + 20 * $x, 3 + 20 * $y, 18, 18);
+if ($color == 4) # the any-robot target: a pie of all five colours from the top, as .target.black in style.css, clipped to the square
+{
+	imagesetclip($board, (3 + 20 * $x) * $u, (3 + 20 * $y) * $u, (21 + 20 * $x) * $u - 1, (21 + 20 * $y) * $u - 1);
+	foreach ($colors as $i => $c) { imagefilledarc($board, (12 + 20 * $x) * $u, (12 + 20 * $y) * $u, 26 * $u, 26 * $u, 72 * $i - 90, 72 * $i - 18, $c, IMG_ARC_PIE); }
+	imagesetclip($board, 0, 0, 324 * $u - 1, 324 * $u - 1);
+}
+else $rect($colors[$color], 3 + 20 * $x, 3 + 20 * $y, 18, 18);
 $star = [];
 for ($i = 0; $i < 10; $i++)
 {
