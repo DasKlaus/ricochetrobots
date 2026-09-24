@@ -50,28 +50,24 @@ if (($do == 'create' or $do == 'join') and $_SESSION['user_id'])
 	}
 }
 
-// a finished daily run, five solutions of up to 64 moves, is held in the session until there is a user to save it for;
-// a later one replaces it with fewer moves, and its time still counts from the first opening. The newest is kept apart for display.
+// a finished daily run, five solutions of up to 64 moves, is held in the session until there is a user to save it for,
+// and a later one replaces it with fewer moves. The newest is kept apart for display.
 if ($do == 'daily' and in_array($_POST['day'] ?? '', [date('Y-m-d'), date('Y-m-d', strtotime('yesterday'))], true)
 	and preg_match('/^\[(\{"moves":\[(\{"color":[0-4],"dir":[0-3]\})(,(?2)){0,63}\]\})(,(?1)){4}\]$/', $_POST['history'] ?? ''))
 {
+	$run = ['day' => $_POST['day'], 'history' => $_POST['history'], 'length' => substr_count($_POST['history'], 'color')];
+	$_SESSION['ricochetlatest'] = $run;
 	$held = $_SESSION['ricochetdaily'] ?? ['day' => ''];
-	$length = substr_count($_POST['history'], 'color');
-	$seconds = (int)($_POST['seconds'] ?? 0);
-	$_SESSION['ricochetlatest'] = ['day' => $_POST['day'], 'history' => $_POST['history'], 'length' => $length, 'seconds' => $seconds];
-	if ($held['day'] != $_POST['day'])
-		$_SESSION['ricochetdaily'] = ['day' => $_POST['day'], 'history' => $_POST['history'], 'length' => $length, 'seconds' => $seconds, 'opened' => time() - $seconds];
-	elseif ($length < $held['length'])
-		$_SESSION['ricochetdaily'] = ['history' => $_POST['history'], 'length' => $length, 'seconds' => time() - $held['opened']] + $held;
+	if ($held['day'] != $run['day'] or $run['length'] < $held['length'])
+		$_SESSION['ricochetdaily'] = $run;
 }
 if ($_SESSION['user_id'] and isset($_SESSION['ricochetdaily']))
 {
 	$run = $_SESSION['ricochetdaily'];
 	$streak = 1 + (int)$mysql->execute_query("select streak from daily where day = ? - interval 1 day and user_id = ?", [$run['day'], $_SESSION['user_id']])->fetch_column();
-	$mysql->execute_query("insert into daily (day, user_id, moves, length, seconds, streak, opened_at) values (?, ?, ?, ?, ?, ?, from_unixtime(?))
-		on duplicate key update seconds = if(values(length) < length, timestampdiff(second, opened_at, now()), seconds),
-			moves = if(values(length) < length, values(moves), moves), length = least(length, values(length))",
-		[$run['day'], $_SESSION['user_id'], $run['history'], $run['length'], $run['seconds'], $streak, $run['opened']]);
+	$mysql->execute_query("insert into daily (day, user_id, moves, length, streak) values (?, ?, ?, ?, ?)
+		on duplicate key update moves = if(values(length) < length, values(moves), moves), length = least(length, values(length))",
+		[$run['day'], $_SESSION['user_id'], $run['history'], $run['length'], $streak]);
 	unset($_SESSION['ricochetdaily']);
 }
 if ($do == 'daily')
@@ -105,7 +101,7 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 	</head>
 	<body>
 	<div class="header">
-		<div class="time<?php if ($go == 'daily') echo ' clock'; ?>"></div>
+		<div class="time<?php if ($go == 'daily') echo ' total'; ?>"></div>
 		<?php
 		if ($go == 'game')
 			echo '<div class="gameid">'.t('gameid').':<b>'.htmlspecialchars($seed, ENT_QUOTES, 'UTF-8').'</b></div>';
@@ -114,7 +110,14 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 		else
 			echo '<h1>Ricochet Robots</h1>';
 		?>
-		<div class="points"></div>
+		<div class="points<?php if ($go == 'daily') echo ' daily'; ?>"></div>
+		<?php
+		if ($go == 'daily')
+			echo '<div class="back">
+					<span title="'.t('targetback').'" onclick="back(false);">&#8630;</span>
+					<span title="'.t('targetallback').'" onclick="back(true);">&#8634;</span>
+				</div>';
+		?>
 	</div>
 	<?php
 	if ($go == 'game' or $go == 'daily')

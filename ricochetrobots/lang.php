@@ -37,7 +37,6 @@ $ui = [
 	'understood' => 'Verstanden',
 	'showbest' => 'Eigene beste Lösung anzeigen',
 	'showlatest' => 'Zur aktuellen Lösung zurückkehren',
-	'totalmoves' => 'Züge insgesamt',
 
 	'nogame' => 'Dieses Spiel gibt es nicht.',
 	'creategamefailed' => 'Das Spiel konnte nicht erstellt werden.',
@@ -64,9 +63,7 @@ $ui = [
 	'home' => 'Zur Startseite',
 	'target' => ['Ziel', 'Ziele'],
 	'move' => ['Zug', 'Züge'],
-	'sharemoves' => '%1 = %2 Züge · %3',
-	'shareminutes' => '%1 Minuten',
-	'sharehours' => '%1 Stunden',
+	'sharemoves' => '%1 = %2 Züge',
 	'sharestreak' => '🔥 %1 Tage in Folge',
 
 	'metadescription' => 'Führe die Roboter zum Ziel. Nach dem Brettspiel von Alex Randolph',
@@ -93,7 +90,6 @@ $ui = [
 	'understood' => 'Understood',
 	'showbest' => 'Show personal best',
 	'showlatest' => 'Back to current solution',
-	'totalmoves' => 'Total moves',
 
 	'nogame' => 'This game does not exist.',
 	'creategamefailed' => 'The game could not be created.',
@@ -120,9 +116,7 @@ $ui = [
 	'home' => 'To the start page',
 	'target' => ['target', 'targets'],
 	'move' => ['move', 'moves'],
-	'sharemoves' => '%1 = %2 moves · %3',
-	'shareminutes' => '%1 minutes',
-	'sharehours' => '%1 hours',
+	'sharemoves' => '%1 = %2 moves',
 	'sharestreak' => '🔥 %1 days in a row',
 
 	'metadescription' => 'Guide the robots to the target. After the board game by Alex Randolph',

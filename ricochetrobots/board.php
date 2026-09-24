@@ -4,9 +4,8 @@ if ($go == 'daily')
 	$held = $_SESSION['ricochetdaily'] ?? ['day' => ''];
 	$latest = $_SESSION['ricochetlatest'] ?? ['day' => ''];
 	$run = $_SESSION['user_id']
-		? $mysql->execute_query("select moves as history, length, seconds, streak, timestampdiff(second, opened_at, now()) as elapsed from daily where day = ? and user_id = ?",
-			[date('Y-m-d'), $_SESSION['user_id']])->fetch_assoc()
-		: ($held['day'] == date('Y-m-d') ? ['history' => $held['history'], 'length' => $held['length'], 'seconds' => $held['seconds'], 'elapsed' => time() - $held['opened']] : null);
+		? $mysql->execute_query("select moves as history, length, streak from daily where day = ? and user_id = ?", [date('Y-m-d'), $_SESSION['user_id']])->fetch_assoc()
+		: ($held['day'] == date('Y-m-d') ? $held : null);
 	// the newest run is shown rather than the saved best, which may have needed fewer moves
 	$daily = ['number' => $number, 'day' => date('Y-m-d'), 'run' => $run, 'latest' => $run && $latest['day'] == date('Y-m-d') ? $latest : null];
 	$isplayer = true;
@@ -39,14 +38,9 @@ if ($rules)
 <div class="wrap"<?php if ($rules) echo ' hidden'; ?>>
 	<div class="map"></div>
 	<div class="solutionwrapper<?php if ($daily) echo ' daily'; ?>">
-		<div class="best"></div><div class="all"></div><div class="current"></div>
+		<?php if (!$daily) echo '<div class="best"></div>'; ?><div class="all"></div><div class="current"></div>
 		<div class="btn" title="<?php echo t('stepback'); ?>" onclick="stepBack();">&lsaquo;</div>
 		<div class="btn" title="<?php echo t('stepallback'); ?>" onclick="stepAllBack();">&laquo;</div>
-		<?php
-		if ($daily)
-			echo '<div class="btn" title="'.t('targetback').'" onclick="back(false);">&#8630;</div>
-				<div class="btn" title="'.t('targetallback').'" onclick="back(true);">&#8634;</div>';
-		?>
 	</div>
 </div>
 <?php

@@ -17,7 +17,6 @@ var game = {timer: null, timeleft: null, running: false};
 var state = {version: -1, round: 0, history: [], timeleft: null, solutions: [], players: []}; // the last payload
 var transition = false; // a round end is being played back
 var playtimer; // the next move being played back
-var opened; // when the daily was first opened, on the client's clock
 var shown; // the daily's finished run on display: the newest, or the saved best
 var offline = false;
 var pollwait = 5000;
@@ -120,7 +119,7 @@ function init() {
   // the daily: one target of each colour in drawn order, the grey one last
   if (daily) map.targets = map.targets.filter(function(t, i, all) { return all.findIndex(function(u) { return u.color == t.color; }) == i; })
     .sort(function(a, b) { return (a.color == 4) - (b.color == 4); });
-  document.querySelectorAll(".time, .points").forEach(function(box) { box.style.visibility = "visible"; });
+  document.querySelectorAll(".time, .points, .back").forEach(function(box) { box.style.visibility = "visible"; });
   state.history.forEach(function(h) { apply(h.moves); });
   drawRobots();
   window.addEventListener("keydown", handleKey);
@@ -129,16 +128,7 @@ function init() {
 }
 
 function render() {
-  if (daily) {
-    writeSolutions(state.history);
-    var totalbox = document.querySelector(".best");
-    totalbox.textContent = txt.totalmoves;
-    var sum = document.createElement("span");
-    sum.className = "length";
-    sum.textContent = total();
-    totalbox.appendChild(sum);
-    return;
-  }
+  if (daily) { writeSolutions(state.history); return; }
   if (state.round > round) { endRound(); return; }
   if (round >= map.targets.length) return;
   writeplayers();
@@ -180,7 +170,7 @@ function startRound() {
   round = state.round;
   best = null;
   turn = {solution: [], robot: null};
-  if (daily) tick(); // the daily's clock runs on through its targets
+  if (daily) writeTotal();
   else {
     clearInterval(game.timer);
     var time = document.querySelector(".time");
@@ -313,9 +303,7 @@ function writeplayers() {
 // on opening the page, or when the rules shown first are closed
 function start() {
   document.querySelector(".wrap").hidden = false;
-  opened = Date.now() - (daily.run ? daily.run.elapsed : 0) * 1000;
   init();
-  setInterval(tick, 1000);
 }
 
 // the first solution counts, the robots stay and the next target starts; the last one sends the run,
@@ -323,11 +311,11 @@ function start() {
 function solved(moves) {
   state.history.push({moves: moves});
   state.round++;
+  turn.solution = [];
   document.querySelector(".current").textContent = "";
   render();
   if (state.round < map.targets.length) { startRound(); return; }
-  var run = {do: "daily", day: daily.day, history: JSON.stringify(state.history), seconds: Math.floor((Date.now() - opened) / 1000)};
-  fetch("", {method: "POST", body: new URLSearchParams(run)}).then(function() {
+  fetch("", {method: "POST", body: new URLSearchParams({do: "daily", day: daily.day, history: JSON.stringify(state.history)})}).then(function() {
     setTimeout(function() { location.replace(location.href); }, movetime);
   });
 }
@@ -355,23 +343,15 @@ function toggle() {
   render();
 }
 
-// the clock runs from first opening, a finished run shows its own time
-function tick() {
-  document.querySelector(".time").textContent = clock(round < map.targets.length ? Math.floor((Date.now() - opened) / 1000) : shown.seconds);
-}
-
-// m:ss, past an hour h:mm:ss
-function clock(seconds) {
-  var rest = ":"+("0"+seconds%60).slice(-2);
-  return seconds < 3600 ? Math.floor(seconds/60)+rest : Math.floor(seconds/3600)+":"+("0"+Math.floor(seconds/60)%60).slice(-2)+rest;
+// the moves so far, the solution being composed included
+function writeTotal() {
+  document.querySelector(".time").textContent = total() + turn.solution.length;
 }
 
 // plain text with one sign per target; the address carries no result
 function share() {
   var signs = state.history.map(function(h) { var n = h.moves.length; return n > 10 ? "🟥" : n == 10 ? "🔟" : n+"\uFE0F\u20E3"; });
-  var seconds = shown.seconds;
-  var text = new URL("daily", location.href).href+" #"+daily.number+"\n"
-    +fmt(txt.sharemoves, signs.join(""), total(), fmt(seconds < 3600 ? txt.shareminutes : txt.sharehours, clock(seconds)));
+  var text = new URL("daily", location.href).href+" #"+daily.number+"\n"+fmt(txt.sharemoves, signs.join(""), total());
   return daily.run.streak >= 2 ? text+"\n"+fmt(txt.sharestreak, daily.run.streak) : text;
 }
 
@@ -434,6 +414,7 @@ function moveRobot(dir) {
   if (endpoint.target == target && (this.color == target.color || target.color == 4)) targetReached();
   exorciseAll();
   if (turn.robot) turn.robot.show();
+  if (daily) writeTotal();
 }
 
 function stepBack() {
@@ -442,6 +423,7 @@ function stepBack() {
   moveTo(step.robot, step.start);
   document.querySelector(".current").lastChild.remove();
   if (turn.robot) { exorciseAll(); turn.robot.show(); }
+  if (daily) writeTotal();
 }
 
 function stepAllBack() {

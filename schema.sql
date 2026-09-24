@@ -39,8 +39,6 @@ CREATE TABLE `daily` (
 	`user_id` bigint(20) NOT NULL,
 	`moves` json NOT NULL, -- the five solutions, shaped as history in logic.js
 	`length` int(10) NOT NULL,
-	`seconds` int(10) NOT NULL,
 	`streak` int(10) NOT NULL, -- yesterday's row's streak plus one, or one
-	`opened_at` datetime NOT NULL, -- the first save's time minus its seconds
 	PRIMARY KEY (`day`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

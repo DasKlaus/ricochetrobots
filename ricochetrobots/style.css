@@ -29,7 +29,10 @@ h3 {font-weight: 600;}
 .time.g30 {color: var(--fg);}
 .time.g10 {color: #c82;}
 .time.l10 {color: var(--warn);}
-.time.clock {color: var(--fg);}
+.time.total {color: var(--fg);}
+.points.daily {width: 86px; padding-right: 24px;} /* room for .back */
+.back {position: absolute; right: 12px; bottom: 4px; visibility: hidden; font-size: 20px; font-weight: bold; line-height: 25px; cursor: pointer;}
+.back span {display: block;}
 input, button {margin: 0 10px 10px 0; padding: 10px 20px; border: 2px solid var(--ink); border-radius: 25px; font-size: 20px; font-weight: bold;}
 input {background-color: var(--bg); color: var(--fg);}
 button {background-color: var(--button); color: #fff; cursor: pointer;}
@@ -50,16 +53,13 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .map {position: relative; width: 320px; height: 320px; margin: 0 8px; border: 2px solid var(--ink); background-color: var(--panel);}
 .solutionwrapper {position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: 324px; height: 324px; margin: 0 8px; border: 4px solid var(--ink); background-color: var(--panel);}
 /* wrapped under the board, which then draws the dividing line */
-@container (width < 680px) {.solutionwrapper {border-top: none; height: 162px;}}
+@container (width < 680px) {.solutionwrapper {border-top: none; height: 162px;} .solutionwrapper.daily {height: 250px;}}
 .btn {position: absolute; bottom: 5px; right: 40px; font-size: 2em; font-weight: bold; cursor: pointer;}
 .btn:last-child {right: 10px;}
-.daily .btn:nth-last-child(2) {right: 50px;}
-.daily .btn:nth-last-child(3) {right: 92px;}
-.daily .btn:nth-last-child(4) {right: 122px;}
 .best, .current {flex: none; min-height: 18px; padding: 10px;}
 .current {padding-right: 50px;}
-.daily .current {padding-right: 140px;}
 .all {flex: auto; overflow: auto; border-block: 2px solid var(--ink);}
+.daily .all {border-top: none;}
 .singlesolution {padding: 10px; border-bottom: 1px dotted var(--ink);}
 .singlesolution:last-child {border: none;}
 .length {float: right;}
@@ -88,7 +88,7 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .target {position: absolute; width: 18px; height: 18px; margin: 1px; border-radius: 2px; color: #fff; font-size: 14px; line-height: 18px; text-align: center;}
 .target.black {background: conic-gradient(#d2365d 0 20%, var(--blue) 0 40%, #e6b13b 0 60%, #6fca34 0 80%, #888 0);} /* any robot; drawn the same in preview.php */
 .robot, .ghost {position: absolute; z-index: 2; width: 16px; height: 16px; margin: 2px; border-radius: 50%; cursor: pointer;}
-.robot {box-shadow: 0 0 1px #000; color: #fff; font-size: 12px; font-weight: bold; line-height: 16px; text-align: center; transition: top .7s, left .7s; -webkit-user-select: none; user-select: none;} /* the duration is movetime in logic.js */
+.robot {box-shadow: 0 0 1px #000; color: #fff; font-size: 12px; font-weight: bold; line-height: 14px; text-align: center; transition: top .7s, left .7s; -webkit-user-select: none; user-select: none;} /* the duration is movetime in logic.js */
 .robot.active {box-shadow: inset 0 0 5px #000;}
 .ghost {opacity: .5;}
 .content .target, .content .robot {position: static; display: inline-block; vertical-align: middle; cursor: auto;} /* the examples in the instructions */
