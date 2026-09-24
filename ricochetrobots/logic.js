@@ -503,6 +503,7 @@ function exorciseAll() {
 function handleKey(e) {
   if (!game.running) return;
   var key = e.keyCode;
+  if (key > 95 && key < 106) key -= 48; // numpad digits
   if (key > 48 && key < 54) map.robots[key-49].activate(); // 1 to 5
   if (key == 48) deactivateRobot(); // 0
   if (key > 36 && key < 41 && turn.robot) { // arrows, kept from scrolling the page
