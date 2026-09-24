@@ -11,6 +11,7 @@ A multiplayer board game implementation
 * put everything on a server
 * create the game database from `schema.sql` and the shared identity database from `identity.sql`
 * enter the mysql credentials in `config.php` and in `identity.php`
+* the puzzle of the day's address `daily` needs Apache's mod_rewrite (`ricochetrobots/.htaccess`)
 * put a `.user.ini` above the document root switching `display_errors` off and `log_errors` on, with
   `error_log` pointing outside the document root — `config.php` runs too late to catch a parse error
 
@@ -35,9 +36,16 @@ In a game, the round is displayed at the upper right, the countdown after a solu
 * backspace to undo the last turn
 * escape to start over
 
+## Puzzle of the day
+
+A new board with five targets every day at `daily`, the same for everyone: one target of each colour, the grey one last.
+A target's first solution counts, and the robots stay where it left them. Two more buttons in the solution window undo the last target or all of them, also after the fifth, which is how a finished run is retried. The clock runs from first opening the puzzle; visitors without a name see the rules first, and their clock starts when they close them.
+A finished run is saved under a name. Guests are asked for one at the end, and without it the run lasts only for the session. A later run replaces the saved one if it needs fewer moves, its time still counted from the first opening.
+The result is a plain-text share line with a copy button: moves per target, the total, the time and, from two days in a row on, the streak.
+
 ## Notes
 
-The board is derived from the six-letter game code, so the server stores solutions and nothing else about a board. Data gets stored, received and sent in json format.
+The board is derived from the six-letter game code, so the server stores solutions and nothing else about a board. The puzzle of the day's board is derived from the date, and only finished runs reach the server. Data gets stored, received and sent in json format.
 
 ## People
 

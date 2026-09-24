@@ -18,7 +18,7 @@ h3 {font-weight: 600;}
 
 /* header, content and player bar share one column that shrinks with the window; the board keeps its fixed geometry */
 
-.header, .content, .players {max-width: 570px; margin: 12px auto;}
+.header, .content, .players, .result {max-width: 720px; margin: 12px auto;}
 .header {position: relative; height: 58px; text-align: center;}
 .header h1 {margin: 0; line-height: 58px;}
 .gameid {position: absolute; bottom: 0; width: 100%; line-height: 1;}
@@ -29,6 +29,7 @@ h3 {font-weight: 600;}
 .time.g30 {color: var(--fg);}
 .time.g10 {color: #c82;}
 .time.l10 {color: var(--warn);}
+.time.clock {color: var(--fg);}
 input, button {margin: 0 10px 10px 0; padding: 10px 20px; border: 2px solid var(--ink); border-radius: 25px; font-size: 20px; font-weight: bold;}
 input {background-color: var(--bg); color: var(--fg);}
 button {background-color: var(--button); color: #fff; cursor: pointer;}
@@ -45,14 +46,19 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 /* board */
 
 .wrap {display: flex; flex-wrap: wrap; justify-content: center; container-type: inline-size;}
+.wrap[hidden] {display: none;}
 .map {position: relative; width: 320px; height: 320px; margin: 0 8px; border: 2px solid var(--ink); background-color: var(--panel);}
 .solutionwrapper {position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: 324px; height: 324px; margin: 0 8px; border: 4px solid var(--ink); background-color: var(--panel);}
 /* wrapped under the board, which then draws the dividing line */
 @container (width < 680px) {.solutionwrapper {border-top: none; height: 162px;}}
 .btn {position: absolute; bottom: 5px; right: 40px; font-size: 2em; font-weight: bold; cursor: pointer;}
 .btn:last-child {right: 10px;}
+.daily .btn:nth-last-child(2) {right: 50px;}
+.daily .btn:nth-last-child(3) {right: 92px;}
+.daily .btn:nth-last-child(4) {right: 122px;}
 .best, .current {flex: none; min-height: 18px; padding: 10px;}
 .current {padding-right: 50px;}
+.daily .current {padding-right: 140px;}
 .all {flex: auto; overflow: auto; border-block: 2px solid var(--ink);}
 .singlesolution {padding: 10px; border-bottom: 1px dotted var(--ink);}
 .singlesolution:last-child {border: none;}
@@ -68,8 +74,9 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .text h3 {margin-top: 0; text-align: center;}
 .text table {width: 100%;}
 .text th, .text td + td {text-align: right;}
-.players {box-sizing: border-box; min-height: 58px; padding: 10px; border: 4px solid var(--ink); background-color: var(--panel); line-height: 30px; text-align: center;}
+.players, .result {box-sizing: border-box; min-height: 58px; padding: 10px; border: 4px solid var(--ink); background-color: var(--panel); line-height: 30px; text-align: center;}
 .player {margin: 0 8px; white-space: nowrap;}
+.share {white-space: pre-line;}
 .home {display: block; margin: 12px auto;} /* replaces the player bar once the game is over */
 .me {font-weight: 600;}
 .tile {position: absolute; box-sizing: border-box; width: 20px; height: 20px; border: 1px solid var(--grid);}

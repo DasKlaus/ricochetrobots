@@ -16,6 +16,8 @@ var best = null; // the round's leading solution as last rendered
 var game = {timer: null, timeleft: null, running: false};
 var state = {version: -1, round: 0, history: [], timeleft: null, solutions: [], players: []}; // the last payload
 var transition = false; // a round end is being played back
+var playtimer; // the next move being played back
+var opened; // when the daily was first opened, on the client's clock
 var offline = false;
 var pollwait = 5000;
 var polltimer;
@@ -114,6 +116,9 @@ function receive(next) {
 
 function init() {
   createMap();
+  // the daily: one target of each colour in drawn order, the grey one last
+  if (daily) map.targets = map.targets.filter(function(t, i, all) { return all.findIndex(function(u) { return u.color == t.color; }) == i; })
+    .sort(function(a, b) { return (a.color == 4) - (b.color == 4); });
   document.querySelectorAll(".time, .points").forEach(function(box) { box.style.visibility = "visible"; });
   state.history.forEach(function(h) { apply(h.moves); });
   drawRobots();
@@ -123,6 +128,7 @@ function init() {
 }
 
 function render() {
+  if (daily) { writeSolutions(state.history); return; }
   if (state.round > round) { endRound(); return; }
   if (round >= map.targets.length) return;
   writeplayers();
@@ -145,26 +151,32 @@ function render() {
     length.textContent = leader.length;
     bestbox.appendChild(length);
   }
-  var mine = state.solutions.filter(function(s) { return s.user_id == selfid; });
+  writeSolutions(state.solutions.filter(function(s) { return s.user_id == selfid; }).sort(function(a, b) { return b.id - a.id; }));
+  if (state.timeleft !== null) countdown(Math.max(state.timeleft, 1));
+}
+
+function writeSolutions(solutions) {
   var all = document.querySelector(".all");
   all.textContent = "";
-  mine.sort(function(a, b) { return b.id - a.id; }).forEach(function(s) {
+  solutions.forEach(function(s) {
     var row = document.createElement("div");
     row.className = "singlesolution";
     writeMoves(row, s.moves);
     all.appendChild(row);
   });
-  if (state.timeleft !== null) countdown(Math.max(state.timeleft, 1));
 }
 
 function startRound() {
   round = state.round;
   best = null;
   turn = {solution: [], robot: null};
-  clearInterval(game.timer);
-  var time = document.querySelector(".time");
-  time.className = "time";
-  time.textContent = " ";
+  if (daily) tick(); // the daily's clock runs on through its targets
+  else {
+    clearInterval(game.timer);
+    var time = document.querySelector(".time");
+    time.className = "time";
+    time.textContent = " ";
+  }
   if (round >= map.targets.length) { endGame(); return; }
   document.querySelector(".points").textContent = (round + 1)+"/"+map.targets.length;
   map.targets[round].activate();
@@ -191,6 +203,12 @@ function endRound() {
 
 function endGame() {
   game.running = false;
+  if (daily) {
+    document.querySelector(".share").textContent = share();
+    document.querySelector(".result").hidden = false;
+    replay(0);
+    return;
+  }
   var wrapper = document.querySelector(".solutionwrapper");
   wrapper.textContent = "";
   var box = document.createElement("div");
@@ -217,10 +235,7 @@ function endGame() {
 
 // the finished game on a loop, each round's winning solution played as at its end
 function replay(r) {
-  if (r == 0) { // every robot leaves its tile before any returns, as one may stand on another's start
-    map.robots.forEach(function(robot) { robot.tile.robot = null; robot.tile = robot.start; });
-    map.robots.forEach(function(robot) { moveTo(robot, robot.start); });
-  }
+  if (r == 0) reset();
   document.querySelector(".points").textContent = (r + 1)+"/"+state.history.length;
   map.targets[r].activate();
   play(state.history[r].moves, function() { replay((r + 1) % state.history.length); });
@@ -230,6 +245,7 @@ function targetReached() {
   game.running = false;
   deactivateRobot();
   var moves = turn.solution.map(function(step) { return {color: step.color, dir: step.dir}; });
+  if (daily) { solved(moves); return; }
   var mine = state.solutions.filter(function(s) { return s.user_id == selfid; });
   var known = mine.some(function(s) {
     return s.length == moves.length && s.moves.every(function(m, i) { return m.color == moves[i].color && m.dir == moves[i].dir; });
@@ -277,6 +293,67 @@ function writeplayers() {
   });
 }
 
+/*
+ * the daily: played in the browser alone, only a finished run reaches the server
+ */
+
+// on opening the page, or when the rules shown first are closed
+function start() {
+  document.querySelector(".wrap").hidden = false;
+  opened = Date.now() - (daily.run ? daily.run.elapsed : 0) * 1000;
+  init();
+  setInterval(tick, 1000);
+}
+
+// the first solution counts, the robots stay and the next target starts; the last one sends the run,
+// and the page comes back from the server with the saved result
+function solved(moves) {
+  state.history.push({moves: moves});
+  state.round++;
+  document.querySelector(".current").textContent = "";
+  render();
+  if (state.round < map.targets.length) { startRound(); return; }
+  var run = {do: "daily", day: daily.day, history: JSON.stringify(state.history), seconds: Math.floor((Date.now() - opened) / 1000)};
+  fetch("", {method: "POST", body: new URLSearchParams(run)}).then(function() {
+    setTimeout(function() { location.replace(location.href); }, movetime);
+  });
+}
+
+// back one target or, with all, to the first: the later solutions are discarded and the robots return to where that target started
+function back(all) {
+  clearTimeout(playtimer);
+  deactivateRobot();
+  state.history = all ? [] : state.history.slice(0, -1);
+  state.round = state.history.length;
+  document.querySelector(".current").textContent = "";
+  document.querySelector(".result").hidden = true;
+  reset();
+  state.history.forEach(function(h) { apply(h.moves); });
+  startRound();
+  render();
+}
+
+// the clock runs from first opening, a finished run shows its own time
+function tick() {
+  document.querySelector(".time").textContent = clock(round < map.targets.length ? Math.floor((Date.now() - opened) / 1000) : daily.run.seconds);
+}
+
+// m:ss, past an hour h:mm:ss
+function clock(seconds) {
+  var rest = ":"+("0"+seconds%60).slice(-2);
+  return seconds < 3600 ? Math.floor(seconds/60)+rest : Math.floor(seconds/3600)+":"+("0"+Math.floor(seconds/60)%60).slice(-2)+rest;
+}
+
+// plain text with one sign per target; the address carries no result
+function share() {
+  var signs = state.history.map(function(h) { var n = h.moves.length; return n > 10 ? "🟥" : n == 10 ? "🔟" : n+"\uFE0F\u20E3"; });
+  var total = state.history.reduce(function(sum, h) { return sum + h.moves.length; }, 0);
+  var seconds = daily.run.seconds;
+  var text = new URL("daily", location.href).href+" #"+daily.number+"\n"
+    +fmt(txt.sharemoves, signs.join(""), total, fmt(seconds < 3600 ? txt.shareminutes : txt.sharehours, clock(seconds)));
+  return daily.run.streak >= 2 ? text+"\n"+fmt(txt.sharestreak, daily.run.streak) : text;
+}
+
 function display(text) {
   var box = document.createElement("div");
   box.className = "display";
@@ -309,8 +386,16 @@ function apply(moves) {
 }
 
 function play(moves, then) {
-  moves.forEach(function(move, i) { setTimeout(function() { apply([move]); }, movetime * (i + 1)); });
-  setTimeout(then, movetime * (moves.length + 1));
+  playtimer = setTimeout(function() {
+    if (!moves.length) then();
+    else { apply(moves.slice(0, 1)); play(moves.slice(1), then); }
+  }, movetime);
+}
+
+// every robot leaves its tile before any returns, as one may stand on another's start
+function reset() {
+  map.robots.forEach(function(robot) { robot.tile.robot = null; robot.tile = robot.start; });
+  map.robots.forEach(function(robot) { moveTo(robot, robot.start); });
 }
 
 function moveRobot(dir) {
@@ -603,5 +688,11 @@ var originals = [ // contains targets and walls (position from upper left corner
 //{color: 3, wallX: 5, wallY: 5, targets: [[1,3,0,0], [6,4,2,2], [2,6,3,3], [3,6,1,1]]}, // plus diagonals in green upwards at 4,1 and in yellow downwards at 5,7
 ];
 
-document.addEventListener("visibilitychange", repoll);
-poll();
+if (daily) {
+  state.history = daily.run ? JSON.parse(daily.run.history) : [];
+  state.round = state.history.length;
+  if (!document.querySelector(".wrap").hidden) start();
+} else {
+  document.addEventListener("visibilitychange", repoll);
+  poll();
+}

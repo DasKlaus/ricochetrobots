@@ -21,6 +21,7 @@ $ui = [
 	'instructions' => 'Anleitung',
 	'legal' => 'Impressum',
 	'gameid' => 'Spiel-ID',
+	'multiplayer' => 'Mehrspieler',
 	'joingame' => 'Spiel beitreten',
 	'join' => 'Beitreten',
 	'newgame' => 'Neues Spiel',
@@ -28,6 +29,12 @@ $ui = [
 	'playalong' => 'Mitspielen',
 	'stepback' => 'letzten Zug zurücknehmen',
 	'stepallback' => 'alle Züge zurücknehmen',
+	'targetback' => 'letztes Ziel zurücknehmen',
+	'targetallback' => 'alle Ziele zurücknehmen',
+	'daily' => 'Rätsel des Tages',
+	'play' => 'Spielen',
+	'copy' => 'Kopieren',
+	'understood' => 'Verstanden',
 
 	'nogame' => 'Dieses Spiel gibt es nicht.',
 	'creategamefailed' => 'Das Spiel konnte nicht erstellt werden.',
@@ -54,6 +61,10 @@ $ui = [
 	'home' => 'Zur Startseite',
 	'target' => ['Ziel', 'Ziele'],
 	'move' => ['Zug', 'Züge'],
+	'sharemoves' => '%1 = %2 Züge · %3',
+	'shareminutes' => '%1 Minuten',
+	'sharehours' => '%1 Stunden',
+	'sharestreak' => '🔥 %1 Tage in Folge',
 
 	'metadescription' => 'Führe die Roboter zum Ziel. Nach dem Brettspiel von Alex Randolph',
 ],
@@ -63,6 +74,7 @@ $ui = [
 	'instructions' => 'Instructions',
 	'legal' => 'Legal notice',
 	'gameid' => 'Game ID',
+	'multiplayer' => 'Multiplayer',
 	'joingame' => 'Join a game',
 	'join' => 'Join',
 	'newgame' => 'New game',
@@ -70,6 +82,12 @@ $ui = [
 	'playalong' => 'Join in',
 	'stepback' => 'undo the last move',
 	'stepallback' => 'undo all moves',
+	'targetback' => 'undo the last target',
+	'targetallback' => 'undo all targets',
+	'daily' => 'Puzzle of the day',
+	'play' => 'Play',
+	'copy' => 'Copy',
+	'understood' => 'Understood',
 
 	'nogame' => 'This game does not exist.',
 	'creategamefailed' => 'The game could not be created.',
@@ -96,6 +114,10 @@ $ui = [
 	'home' => 'To the start page',
 	'target' => ['target', 'targets'],
 	'move' => ['move', 'moves'],
+	'sharemoves' => '%1 = %2 moves · %3',
+	'shareminutes' => '%1 minutes',
+	'sharehours' => '%1 hours',
+	'sharestreak' => '🔥 %1 days in a row',
 
 	'metadescription' => 'Guide the robots to the target. After the board game by Alex Randolph',
 ],
@@ -104,16 +126,14 @@ $ui = [
 $text = [
 'de' => [
 	'guestjoin' => '<p>Vergib einen Namen, um mitzuspielen, oder lass das Feld frei, um anonym zu spielen. Wenn du einen Authentifizierungs-Code hast, kannst du dich mit diesem anmelden.</p>',
-	'guestcreate' => '<p>Vergib einen Namen, um ein Spiel zu starten, oder lass das Feld frei, um anonym zu spielen. Wenn du einen Authentifizierungs-Code hast, kannst du dich mit diesem anmelden.</p>',
+	'guestcreate' => '<p>Vergib einen Namen, um im Mehrspielermodus zu spielen. Du kannst das Namensfeld freilassen, um anonym zu spielen. Wenn du einen Authentifizierungs-Code hast, kannst du dich mit diesem anmelden.</p>',
+	'dailyguest' => '<p>Das Ergebnis wird gespeichert, sobald ein Name gesetzt ist, bei leerem Feld anonym. Mit einem Authentifizierungs-Code ist auch eine Anmeldung möglich. Ohne beides geht das Ergebnis mit dem Ende der Sitzung verloren.</p>',
+	'dailytext' => '<p>Jeden Tag ein neues Puzzle mit fünf Zielen.</p>',
 
 	'instructionstext' => '<p>Nach dem Brettspiel von Alex Randolph.</p>
 		<p>Ziel ist, mit dem richtigen Roboter das markierte Ziel zu erreichen, in so wenig Zügen wie möglich.
-		Roboter können nicht anhalten: sie bewegen sich in die entsprechende Richtung, bis sie an eine Wand stoßen.</p>
-		<p>Sobald ein Spieler eine L&ouml;sung gefunden hat, bleiben 60 Sekunden, um eine noch k&uuml;rzere zu finden.
-		Die k&uuml;rzeste L&ouml;sung gewinnt das Ziel, bei gleicher L&auml;nge die zuerst gefundene. Das Spiel endet nach 17 Runden.</p>
-		<p>Es gewinnt der Spieler mit den meisten erreichten Zielen, bei Gleichstand derjenige mit den wenigsten benötigten Z&uuml;gen.
-		Wer ein Ziel erreicht, bekommt die Z&uuml;ge seiner kürzesten L&ouml;sung, alle anderen die der l&auml;ngsten gefundenen L&ouml;sung plus zehn.</p>
-		<p>Mitspieler können durch Teilen der Spiel-ID oder URL eingeladen werden.</p>
+		Roboter können nicht anhalten: sie bewegen sich in die entsprechende Richtung, bis sie an eine Wand oder einen anderen Roboter stoßen.
+		Das graue Ziel darf von jedem Roboter erreicht werden.</p>
 		<h3>Spiel mit der Maus</h3>
 		<ul>
 			<li>&Uuml;ber einen Roboter fahren zeigt seine m&ouml;glichen Z&uuml;ge.</li>
@@ -129,19 +149,22 @@ $text = [
 			<li>Die R&uuml;cktaste nimmt den letzten Zug zur&uuml;ck.</li>
 			<li>Escape nimmt alle Z&uuml;ge zur&uuml;ck.</li>
 		</ul>',
+	'multiplayertext' => '<p>Sobald ein Spieler eine L&ouml;sung gefunden hat, bleiben 60 Sekunden, um eine noch k&uuml;rzere zu finden.
+		Die k&uuml;rzeste L&ouml;sung gewinnt das Ziel, bei gleicher L&auml;nge die zuerst gefundene. Das Spiel endet nach 17 Runden.</p>
+		<p>Es gewinnt der Spieler mit den meisten erreichten Zielen, bei Gleichstand derjenige mit den wenigsten benötigten Z&uuml;gen.
+		Wer ein Ziel erreicht, bekommt die Z&uuml;ge seiner kürzesten L&ouml;sung, alle anderen die der l&auml;ngsten gefundenen L&ouml;sung plus zehn.</p>
+		<p>Mitspieler können durch Teilen der Spiel-ID oder URL eingeladen werden.</p>',
 ],
 'en' => [
 	'guestjoin' => '<p>Pick a name to join in, or leave the field empty to play anonymously. If you have an authentication code, you can sign in with it.</p>',
-	'guestcreate' => '<p>Pick a name to start a game, or leave the field empty to play anonymously. If you have an authentication code, you can sign in with it.</p>',
+	'guestcreate' => '<p>Set a name to play multiplayer. You can leave the field empty to play anonymously. If you have an authentication code, you can sign in with it.</p>',
+	'dailyguest' => '<p>The result is saved once a name is set, anonymously if the field is left empty. An authentication code signs in instead. Without either, the result is lost when the session ends.</p>',
+	'dailytext' => '<p>A new board with five targets every day.</p>',
 
 	'instructionstext' => '<p>After the board game by Alex Randolph.</p>
 		<p>The aim is to reach the marked target with the right robot, in as few moves as possible.
-		Robots cannot stop: they travel in the given direction until they hit a wall.</p>
-		<p>Once a player has found a solution, 60 seconds remain to find a shorter one.
-		The shortest solution wins the target, among equals the one found first. The game ends after 17 rounds.</p>
-		<p>The player with the most targets wins, on a tie the one who needed the fewest moves.
-		Whoever reaches a target scores the moves of their shortest solution, everyone else those of the longest solution found plus ten.</p>
-		<p>Fellow players can be invited by sharing the game ID or the URL.</p>
+		Robots cannot stop: they travel in the given direction until they hit a wall or another robot.
+		The grey target may be reached by any robot.</p>
 		<h3>Playing with the mouse</h3>
 		<ul>
 			<li>Hovering over a robot shows its possible moves.</li>
@@ -157,6 +180,11 @@ $text = [
 			<li>Backspace undoes the last move.</li>
 			<li>Escape undoes all moves.</li>
 		</ul>',
+	'multiplayertext' => '<p>Once a player has found a solution, 60 seconds remain to find a shorter one.
+		The shortest solution wins the target, among equals the one found first. The game ends after 17 rounds.</p>
+		<p>The player with the most targets wins, on a tie the one who needed the fewest moves.
+		Whoever reaches a target scores the moves of their shortest solution, everyone else those of the longest solution found plus ten.</p>
+		<p>Fellow players can be invited by sharing the game ID or the URL.</p>',
 ],
 ];
 

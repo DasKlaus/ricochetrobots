@@ -1,0 +1,2 @@
+RewriteEngine On
+RewriteRule ^daily$ index.php?go=daily [L]
