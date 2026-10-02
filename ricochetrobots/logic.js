@@ -209,6 +209,7 @@ function endGame() {
     button.hidden = !daily.latest || daily.latest.length <= daily.run.length;
     button.textContent = shown == daily.run ? txt.showlatest : txt.showbest;
     document.querySelector(".result").hidden = false;
+    writeHighscores();
     replay(0);
     return;
   }
@@ -328,6 +329,7 @@ function back(all) {
   state.round = state.history.length;
   document.querySelector(".current").textContent = "";
   document.querySelector(".result").hidden = true;
+  document.querySelector(".highscores").hidden = true;
   reset();
   state.history.forEach(function(h) { apply(h.moves); });
   startRound();
@@ -350,9 +352,33 @@ function writeTotal() {
 
 // plain text with one sign per target; the address carries no result
 function share() {
-  var signs = state.history.map(function(h) { var n = h.moves.length; return n > 10 ? "🟥" : n == 10 ? "🔟" : n+"\uFE0F\u20E3"; });
-  var text = new URL("daily", location.href).href+" #"+daily.number+"\n"+fmt(txt.sharemoves, signs.join(""), total());
+  var counts = state.history.map(function(h) { return h.moves.length; });
+  var text = new URL("daily", location.href).href+" #"+daily.number+"\n"+fmt(txt.sharemoves, signs(counts), total());
   return daily.run.streak >= 2 ? text+"\n"+fmt(txt.sharestreak, daily.run.streak) : text;
+}
+
+function signs(counts) {
+  return counts.map(function(n) { return n > 10 ? "🟥" : n == 10 ? "🔟" : n+"\uFE0F\u20E3"; }).join("");
+}
+
+// the saved runs as name, signs and total, so equal totals from different solutions stay apart
+function writeHighscores() {
+  var list = document.querySelector(".highscores");
+  list.textContent = "";
+  daily.top.forEach(function(entry) {
+    var row = document.createElement("div");
+    row.className = "singlesolution";
+    // both float right, the first outermost
+    var length = document.createElement("span");
+    length.className = "length";
+    length.textContent = entry.length;
+    var moves = document.createElement("span");
+    moves.className = "signs";
+    moves.textContent = signs(entry.moves);
+    row.append(length, moves, entry.name || txt.guest);
+    list.appendChild(row);
+  });
+  list.hidden = !daily.top.length;
 }
 
 function total() {

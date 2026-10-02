@@ -37,8 +37,10 @@ CREATE TABLE `solution` (
 CREATE TABLE `daily` (
 	`day` date NOT NULL,
 	`user_id` bigint(20) NOT NULL,
+	`display_name` varchar(255) NOT NULL,
 	`moves` json NOT NULL, -- the five solutions, shaped as history in logic.js
 	`length` int(10) NOT NULL,
 	`streak` int(10) NOT NULL, -- yesterday's row's streak plus one, or one
+	`found_at` datetime NOT NULL, -- when the saved run was played, orders runs of equal length
 	PRIMARY KEY (`day`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

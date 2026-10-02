@@ -6,8 +6,12 @@ if ($go == 'daily')
 	$run = $_SESSION['user_id']
 		? $mysql->execute_query("select moves as history, length, streak from daily where day = ? and user_id = ?", [date('Y-m-d'), $_SESSION['user_id']])->fetch_assoc()
 		: ($held['day'] == date('Y-m-d') ? $held : null);
+	// the ten best saved runs, the earlier among equals, as moves per target so the solutions stay hidden
+	$top = [];
+	foreach ($mysql->execute_query("select display_name, moves, length from daily where day = ? order by length, found_at limit 10", [date('Y-m-d')]) as $row)
+		$top[] = ['name' => $row['display_name'], 'moves' => array_map(fn($h) => count($h['moves']), json_decode($row['moves'], true)), 'length' => $row['length']];
 	// the newest run is shown rather than the saved best, which may have needed fewer moves
-	$daily = ['number' => $number, 'day' => date('Y-m-d'), 'run' => $run, 'latest' => $run && $latest['day'] == date('Y-m-d') ? $latest : null];
+	$daily = ['number' => $number, 'day' => date('Y-m-d'), 'run' => $run, 'latest' => $run && $latest['day'] == date('Y-m-d') ? $latest : null, 'top' => $top];
 	$isplayer = true;
 	$rules = !$run && !$_SESSION['user_id']; // a visitor without a name may come from a shared result, so the rules come first
 }
@@ -49,7 +53,8 @@ if ($daily)
 			<div class="share"></div>
 			<button type="button" onclick="getSelection().selectAllChildren(this.previousElementSibling); navigator.clipboard.writeText(this.previousElementSibling.textContent);">'.t('copy').'</button>
 			<button type="button" class="toggle" onclick="toggle();" hidden></button>
-		</div>';
+		</div>
+		<div class="highscores" hidden></div>';
 else
 	echo '<div class="players"></div>';
 ?>

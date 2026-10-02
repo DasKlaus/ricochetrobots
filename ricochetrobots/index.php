@@ -13,7 +13,10 @@ $do = $_POST['do'] ?? '';
 $warning = '';
 
 if ($do == 'renameall' and $_SESSION['user_id'])
+{
 	$mysql->execute_query("update player set display_name = ? where user_id = ?", [$_SESSION['display_name'], $_SESSION['user_id']]);
+	$mysql->execute_query("update daily set display_name = ? where user_id = ?", [$_SESSION['display_name'], $_SESSION['user_id']]);
+}
 
 if (($do == 'create' or $do == 'join') and $_SESSION['user_id'])
 {
@@ -65,9 +68,11 @@ if ($_SESSION['user_id'] and isset($_SESSION['ricochetdaily']))
 {
 	$run = $_SESSION['ricochetdaily'];
 	$streak = 1 + (int)$mysql->execute_query("select streak from daily where day = ? - interval 1 day and user_id = ?", [$run['day'], $_SESSION['user_id']])->fetch_column();
-	$mysql->execute_query("insert into daily (day, user_id, moves, length, streak) values (?, ?, ?, ?, ?)
-		on duplicate key update moves = if(values(length) < length, values(moves), moves), length = least(length, values(length))",
-		[$run['day'], $_SESSION['user_id'], $run['history'], $run['length'], $streak]);
+	// assignments run in order, so length comes last for the comparisons before it to see the saved one
+	$mysql->execute_query("insert into daily (day, user_id, display_name, moves, length, streak, found_at) values (?, ?, ?, ?, ?, ?, now())
+		on duplicate key update display_name = values(display_name), moves = if(values(length) < length, values(moves), moves),
+			found_at = if(values(length) < length, now(), found_at), length = least(length, values(length))",
+		[$run['day'], $_SESSION['user_id'], $_SESSION['display_name'], $run['history'], $run['length'], $streak]);
 	unset($_SESSION['ricochetdaily']);
 }
 if ($do == 'daily')
