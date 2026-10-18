@@ -151,8 +151,9 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 			echo '<h2>'.t('profile').'</h2>';
 			identityLanguageForm($language, ['de' => 'Deutsch', 'en' => 'English']);
 			identityForm($language);
-			showAchievements($language, 'ricochetrobots');
 		}
+		elseif ($go == 'achievements')
+			showAchievements($language, 'ricochetrobots');
 		else
 		{
 			if ($warning) echo '<p class="warning">'.$warning.'</p>';
@@ -182,6 +183,7 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 	?>
 	<div class="footer">
 		<a href="./?go=user"><?php echo t('profile'); if ($_SESSION['user_id']) echo ': '.htmlspecialchars($_SESSION['display_name'] ?: t('guest'), ENT_QUOTES, 'UTF-8'); ?></a>
+		<?php if ($_SESSION['user_id']) echo '<a href="./?go=achievements">'.t('achievements').'</a>'; ?>
 		<a href="."><?php echo t('instructions'); ?></a>
 		<a href="./?go=impressum"><?php echo t('legal'); ?></a>
 	</div>
