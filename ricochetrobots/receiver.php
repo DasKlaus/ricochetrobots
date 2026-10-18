@@ -10,9 +10,8 @@ set_exception_handler(function ($e) {
 });
 require_once("config.php");
 require_once("../identity.php");
-
-const TARGETS = 17; // 16 coloured targets and the vortex
-const DEADLINE = 60; // seconds a round stays open after its first solution, as deadline in logic.js
+require_once("lang.php");
+require_once("achieve.php");
 
 $seed = $_GET['game'] ?? $_POST['game'] ?? '';
 
@@ -37,7 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' and $_SESSION['user_id'])
 				where g.seed = ? and g.round = ? and g.round < ".TARGETS."
 					and not exists (select 1 from solution s where s.seed = g.seed and s.round = g.round and s.created_at <= now() - interval ".DEADLINE." second)",
 				[$user, json_encode($clean), count($clean), $user, $seed, $round]);
-			if ($mysql->affected_rows) { $mysql->execute_query("update game set version = version + 1 where seed = ?", [$seed]); }
+			if ($mysql->affected_rows)
+			{
+				$id = $mysql->insert_id;
+				$mysql->execute_query("update game set version = version + 1 where seed = ?", [$seed]);
+				foreach (gameevents($mysql, $seed) as [$player, $key, $n, , $solution])
+					if ($solution == $id) { achieve($player, $key, $n); }
+			}
 			break;
 		// the player whose countdown runs out first closes the round; everyone else finds it closed on the next poll
 		case 'advance':
@@ -46,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' and $_SESSION['user_id'])
 				where g.seed = ? and g.round = ?
 					and exists (select 1 from solution s where s.seed = g.seed and s.round = g.round and s.created_at <= now() - interval ".DEADLINE." second)",
 				[$user, $seed, $round]);
+			if ($mysql->affected_rows and $round + 1 == TARGETS)
+				foreach (gameevents($mysql, $seed) as [$player, $key, $n, , $solution])
+					if (!$solution) { achieve($player, $key, $n); }
 			break;
 	}
 }
@@ -56,8 +64,12 @@ elseif (version($mysql, $seed) === (int)($_GET['version'] ?? -1))
 	exit;
 }
 
+// polling never writes, so new achievements go out with a POST's answer only; those granted to others at a game's end
+// show when the finished game's page loads
+$state = gamestate($mysql, $seed);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') { $state['achievements'] = newachievements($language); }
 ob_end_clean();
-echo json_encode(gamestate($mysql, $seed));
+echo json_encode($state);
 
 function version($mysql, $seed)
 {
@@ -65,7 +77,8 @@ function version($mysql, $seed)
 }
 
 // scores are computed here and never stored: a round's winner is its shortest solution, the earliest among
-// equals, and takes its length as points; everyone else takes the round's longest plus ten. Fewer is better.
+// equals, and takes the target. Every player takes the length of their own shortest solution as points, a player
+// without one the round's longest plus ten. Fewer is better.
 function gamestate($mysql, $seed)
 {
 	$currentgame = $mysql->execute_query("select round, version from game where seed = ?", [$seed])->fetch_assoc();
@@ -92,10 +105,11 @@ function gamestate($mysql, $seed)
 			$winner = $list[0];
 			$longest = end($list)['length'];
 			$history[] = ['user_id' => $winner['user_id'], 'name' => $winner['name'], 'moves' => json_decode($winner['moves'])];
+			$players[$winner['user_id']]['targets']++;
 			foreach (array_keys($players) as $id)
 			{
-				if ($id == $winner['user_id']) { $players[$id]['targets']++; $players[$id]['points'] += $winner['length']; }
-				else { $players[$id]['points'] += $longest + 10; }
+				$own = current(array_filter($list, fn($row) => $row['user_id'] == $id)); // the list is shortest first
+				$players[$id]['points'] += $own ? $own['length'] : $longest + 10;
 			}
 		}
 		else

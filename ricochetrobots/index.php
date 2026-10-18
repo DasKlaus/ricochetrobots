@@ -3,8 +3,8 @@ header('Content-Type: text/html; charset=UTF-8');
 require_once("config.php");
 require_once("../identity.php");
 require_once("lang.php"); // after identity.php, which is where a language change lands
+require_once("achieve.php");
 
-const TARGETS = 17; // 16 coloured targets and the vortex
 const ALPHABET = '23456789abcdefghjklmnpqrstuvwxyz'; // as alphabet in logic.js
 const DAILY = '2026-09-24'; // the day of the daily's #1
 
@@ -53,10 +53,10 @@ if (($do == 'create' or $do == 'join') and $_SESSION['user_id'])
 	}
 }
 
-// a finished daily run, five solutions of up to 64 moves, is held in the session until there is a user to save it for,
-// and a later one replaces it with fewer moves. The newest is kept apart for display.
+// a finished daily run, five solutions of up to 64 moves, each with the seconds it took if recorded, is held in the session
+// until there is a user to save it for, and a later one replaces it with fewer moves. The newest is kept apart for display.
 if ($do == 'daily' and in_array($_POST['day'] ?? '', [date('Y-m-d'), date('Y-m-d', strtotime('yesterday'))], true)
-	and preg_match('/^\[(\{"moves":\[(\{"color":[0-4],"dir":[0-3]\})(,(?2)){0,63}\]\})(,(?1)){4}\]$/', $_POST['history'] ?? ''))
+	and preg_match('/^\[(\{"moves":\[(\{"color":[0-4],"dir":[0-3]\})(,(?2)){0,63}\](,"time":\d{1,5})?\})(,(?1)){4}\]$/', $_POST['history'] ?? ''))
 {
 	$run = ['day' => $_POST['day'], 'history' => $_POST['history'], 'length' => substr_count($_POST['history'], 'color')];
 	$_SESSION['ricochetlatest'] = $run;
@@ -74,6 +74,16 @@ if ($_SESSION['user_id'] and isset($_SESSION['ricochetdaily']))
 			found_at = if(values(length) < length, now(), found_at), length = least(length, values(length))",
 		[$run['day'], $_SESSION['user_id'], $_SESSION['display_name'], $run['history'], $run['length'], $streak]);
 	unset($_SESSION['ricochetdaily']);
+	$saved = $mysql->affected_rows; // 1 for the day's first run, 2 for a changed one
+	if ($saved)
+		foreach (dailyevents($mysql->execute_query("select moves, length, streak from daily where day = ? and user_id = ?", [$run['day'], $_SESSION['user_id']])->fetch_assoc()) as [$key, $n])
+			achieve($_SESSION['user_id'], $key, $n);
+	// a player's first run of a day settles the last day before it on which others played too
+	if ($saved == 1 and $winners = topdailies($mysql, $run['day']))
+	{
+		$winner = end($winners)[0];
+		achieve($winner, 'rr_topdaily', count(array_keys(array_column($winners, 0), $winner)));
+	}
 }
 if ($do == 'daily')
 	exit;
@@ -141,6 +151,7 @@ $preview = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://').$_SERVER['HTTP_HO
 			echo '<h2>'.t('profile').'</h2>';
 			identityLanguageForm($language, ['de' => 'Deutsch', 'en' => 'English']);
 			identityForm($language);
+			showAchievements($language, 'ricochetrobots');
 		}
 		else
 		{

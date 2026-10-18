@@ -18,6 +18,9 @@ var state = {version: -1, round: 0, history: [], timeleft: null, solutions: [], 
 var transition = false; // a round end is being played back
 var playtimer; // the next move being played back
 var shown; // the daily's finished run on display: the newest, or the saved best
+var displayed = 0; // when the last message box appeared
+var targetstart = null; // when the daily's target was started, if its time is recorded
+var started = {}; // the earlier solutions every daily target was started after
 var offline = false;
 var pollwait = 5000;
 var polltimer;
@@ -105,6 +108,7 @@ function localstate(moves) {
 
 function receive(next) {
   pollwait = 5000;
+  if (next.achievements) achieved(next.achievements);
   state = next;
   if (round === undefined) init();
   else if (!transition) render();
@@ -181,6 +185,12 @@ function startRound() {
   document.querySelector(".points").textContent = (round + 1)+"/"+map.targets.length;
   map.targets[round].activate();
   game.running = isplayer;
+  // a daily target counts the time of a first run only: once started on the same board, it is known
+  if (daily) {
+    var before = JSON.stringify(state.history.map(function(h) { return h.moves; }));
+    targetstart = !daily.run && !started[before] ? Date.now() : null;
+    started[before] = true;
+  }
 }
 
 function endRound() {
@@ -310,7 +320,7 @@ function start() {
 // the first solution counts, the robots stay and the next target starts; the last one sends the run,
 // and the page comes back from the server with the saved result
 function solved(moves) {
-  state.history.push({moves: moves});
+  state.history.push(targetstart ? {moves: moves, time: Math.round((Date.now() - targetstart) / 1000)} : {moves: moves});
   state.round++;
   turn.solution = [];
   document.querySelector(".current").textContent = "";
@@ -386,6 +396,7 @@ function total() {
 }
 
 function display(text) {
+  displayed = Date.now();
   var box = document.createElement("div");
   box.className = "display";
   box.style = "top: -76px;";
@@ -394,6 +405,12 @@ function display(text) {
   setTimeout(function() { box.style = "top: -4px; transition: top .5s;"; }, 200);
   setTimeout(function() { box.style = "top: -76px;"; }, 2000);
   setTimeout(function() { box.remove(); }, 5000);
+}
+
+// new achievements wait for the message box of the moment to leave, then follow one another
+function achieved(list) {
+  var wait = Math.max(0, displayed + 3000 - Date.now());
+  list.forEach(function(text, i) { setTimeout(display, wait + 3000 * i, text); });
 }
 
 /*
@@ -722,6 +739,7 @@ var originals = [ // contains targets and walls (position from upper left corner
 //{color: 3, wallX: 5, wallY: 5, targets: [[1,3,0,0], [6,4,2,2], [2,6,3,3], [3,6,1,1]]}, // plus diagonals in green upwards at 4,1 and in yellow downwards at 5,7
 ];
 
+achieved(achievements);
 if (daily) {
   shown = daily.latest || daily.run;
   state.history = shown ? JSON.parse(shown.history) : [];

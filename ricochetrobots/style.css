@@ -46,6 +46,11 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 .identity.language input {appearance: none; box-sizing: content-box; width: 25px; height: 25px; margin: 0; padding: 10px; border-radius: 50%;}
 .identity.language input:checked {background-color: var(--button);}
 
+/* achievements on the profile: identity.php writes the level as a bare number in a span */
+ul.achievements img {display: none;}
+ul.achievements li > span:before {content: "Level ";}
+ul.achievements li > span:after {content: ": ";}
+
 /* board */
 
 .wrap {display: flex; flex-wrap: wrap; justify-content: center; container-type: inline-size;}

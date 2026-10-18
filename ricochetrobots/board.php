@@ -64,6 +64,7 @@ else
   var isplayer = <?php echo json_encode((bool)$isplayer); ?>;
   var daily = <?php echo json_encode($daily); ?>;
   var txt = <?php echo json_encode($ui[$language]); ?>;
+  var achievements = <?php echo json_encode(newachievements($language)); ?>;
 </script>
 <script src="logic.js"></script>
 <div class="content">
