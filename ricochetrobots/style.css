@@ -48,8 +48,8 @@ button {background-color: var(--button); color: #fff; cursor: pointer;}
 
 /* achievements on the profile: identity.php writes the level as a bare number in a span */
 ul.achievements img {display: none;}
-ul.achievements li > span:before {content: "Level ";}
-ul.achievements li > span:after {content: ": ";}
+ul.achievements li > span:first-of-type:before {content: "Level ";}
+ul.achievements li > span:first-of-type:after {content: ": ";}
 
 /* board */
 
